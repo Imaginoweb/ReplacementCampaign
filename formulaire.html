@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Je ne suis pas dans la liste</title>
+  <title>Inscription - Imagino</title>
   <style>
     body {
       font-family: sans-serif;
@@ -20,9 +20,13 @@
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
       max-width: 500px;
       width: 100%;
+      text-align: center;
+    }
+    img.logo {
+      height: 60px;
+      margin-bottom: 10px;
     }
     h2 {
-      text-align: center;
       margin-bottom: 20px;
     }
     input, select, button {
@@ -47,7 +51,8 @@
 </head>
 <body>
   <div class="form-container">
-    <h2>Je ne suis pas dans la liste</h2>
+    <img src="logo.png" class="logo" alt="Logo Imagino" />
+    <h2>Inscription</h2>
     <form id="manualForm">
       <input type="text" name="prenom" placeholder="Prénom" required />
       <input type="text" name="nom" placeholder="Nom" required />
@@ -71,7 +76,8 @@
       e.preventDefault();
 
       const formData = new FormData(this);
-      const payload = {
+
+      const contact = {
         Prenom: formData.get("prenom"),
         Nom: formData.get("nom"),
         Email: formData.get("email"),
@@ -89,12 +95,16 @@
           "Content-Type": "application/json",
           "X-API-KEY": apiKey
         },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(contact)
       })
       .then(response => response.json())
       .then(data => {
-        alert("Merci ! Vous êtes bien enregistré.");
-        window.location.href = "index.html";
+        if (data && data.success !== false) {
+          alert("Merci ! Vous êtes bien enregistré.");
+          window.location.href = "index.html";
+        } else {
+          alert("Une erreur est survenue lors de l'enregistrement. Veuillez vérifier vos informations ou réessayer plus tard.");
+        }
       })
       .catch(error => {
         console.error("Erreur API:", error);
