@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Check-in Événement Imagino</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+      background: #f4f4f4;
+      display: flex;
+      justify-content: center;
+    }
+    .container {
+      max-width: 600px;
+      width: 100%;
+      background: #ffffff;
+      border-radius: 12px;
+      padding: 30px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    h1 {
+      font-size: 24px;
+      margin-bottom: 20px;
+    }
+    .guest-card {
+      background: #f9f9f9;
+      border-radius: 10px;
+      padding: 15px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .guest-info {
+      display: flex;
+      flex-direction: column;
+    }
+    .btn {
+      padding: 8px 12px;
+      border: none;
+      border-radius: 5px;
+      background: #007bff;
+      color: white;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .btn.arrived {
+      background: #28a745;
+    }
+    .btn:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+    .header img {
+      height: 50px;
+    }
+    .actions {
+      display: flex;
+      justify-content: center;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <img src="logo.png" alt="Logo Imagino" />
+      <h1>Check-in des invités</h1>
+    </div>
+    <div id="guestList"></div>
+    <div class="actions">
+      <button class="btn" onclick="sendFactsheets()">Envoyer les factsheets</button>
+    </div>
+  </div>
+
+  <script>
+    const guests = [
+      { id: 1, name: "Alice Dupont", appetence: "IT-DATA", present: false },
+      { id: 2, name: "Bruno Martin", appetence: "MARKETING-DIGITAL", present: false },
+      { id: 3, name: "Chloé Bernard", appetence: "IT-DATA", present: false },
+    ];
+
+    function renderGuests() {
+      const list = document.getElementById("guestList");
+      list.innerHTML = "";
+      guests.forEach((guest) => {
+        const card = document.createElement("div");
+        card.className = "guest-card";
+
+        const infoDiv = document.createElement("div");
+        infoDiv.className = "guest-info";
+        infoDiv.innerHTML = `
+          <span><strong>${guest.name}</strong></span>
+          <span style="font-size: 12px; color: #666;">${guest.appetence}</span>
+        `;
+
+        const button = document.createElement("button");
+        button.className = guest.present ? "btn arrived" : "btn";
+        button.textContent = guest.present ? "Arrivé" : "Présent";
+        button.onclick = () => togglePresence(guest.id);
+
+        card.appendChild(infoDiv);
+        card.appendChild(button);
+        list.appendChild(card);
+      });
+    }
+
+    function togglePresence(id) {
+      const guest = guests.find(g => g.id === id);
+      guest.present = !guest.present;
+      if (guest.present) {
+        console.log(`✅ ${guest.name} est présent. SMS envoyé.`);
+        notifyImagino();
+      }
+      renderGuests();
+    }
+
+    function notifyImagino() {
+      fetch('https://imo.prod.imagino.com/ucdapi/Mise_a_jour_contact_Present/v1.0/contactCampagneModerne/quentin.ecuer%40imagino.com', {
+        method: 'GET',
+        headers: {
+          'accept': 'application/json',
+          'X-API-KEY': 'VOTRE_CLE_API_ICI'
+        }
+      })
+      .then(response => {
+        if (!response.ok) throw new Error("Erreur API");
+        return response.json();
+      })
+      .then(data => console.log("✅ Appel API Imagino réussi:", data))
+      .catch(err => console.error("❌ Erreur API Imagino:", err));
+    }
+
+    function sendFactsheets() {
+      const presentes = guests.filter(g => g.present);
+      if (presentes.length === 0) {
+        alert("Aucun invité présent !");
+        return;
+      }
+      presentes.forEach((guest) => {
+        const factsheet = guest.appetence === "IT-DATA" ? "Factsheet IT" : "Factsheet Marketing";
+        console.log(`📧 Email envoyé à ${guest.name} avec ${factsheet}`);
+      });
+      alert("Emails de factsheet envoyés à tous les invités présents.");
+    }
+
+    renderGuests();
+  </script>
+</body>
+</html>
