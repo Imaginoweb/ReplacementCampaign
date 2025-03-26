@@ -132,6 +132,9 @@
           id: i + 1,
           name: `${item.Prenom || ""} ${item.Nom || ""}`.trim() || item.Email,
           email: item.Email,
+          mobile: item.Mobile || "",
+          prenom: item.Prenom || "",
+          nom: item.Nom || "",
           appetence: item.Appetence || "",
           entreprise: "",
           present: item.Present === true
@@ -174,7 +177,13 @@
         presentBtn.textContent = guest.present ? "Arrivé" : "Présent";
         presentBtn.onclick = () => confirmPresence(guest);
 
+        const detailBtn = document.createElement("button");
+        detailBtn.className = "btn";
+        detailBtn.textContent = "Détails";
+        detailBtn.onclick = () => showDetails(guest);
+
         buttonsDiv.appendChild(presentBtn);
+        buttonsDiv.appendChild(detailBtn);
         card.appendChild(infoDiv);
         card.appendChild(buttonsDiv);
         list.appendChild(card);
@@ -199,16 +208,25 @@
     }
 
     function updateGuestPresence(guest) {
-      fetch(`https://imo.prod.imagino.com/ucdapi/Mise_a_jour_contact_Present/v1.0/contactCampagneModerne/${encodeURIComponent(guest.email)}`, {
-        method: "GET",
+      fetch("https://imo.prod.imagino.com/ucdapi/Mise_a_jour_contact_Present/v1.0/contactCampagneModerne", {
+        method: "POST",
         headers: {
           accept: "application/json",
+          "Content-Type": "application/json",
           "X-API-KEY": apiKey
-        }
+        },
+        body: JSON.stringify({
+          Email: guest.email,
+          Present: guest.present
+        })
       })
         .then(response => response.json())
-        .then(data => console.log("Mise à jour API réussite:", data))
-        .catch(err => console.error("Erreur API:", err));
+        .then(data => console.log("Mise à jour API réussie:", data))
+        .catch(err => console.error("Erreur API mise à jour:", err));
+    }
+
+    function showDetails(guest) {
+      alert(`Détails du profil :\n\nNom : ${guest.nom}\nPrénom : ${guest.prenom}\nEmail : ${guest.email}\nMobile : ${guest.mobile}\nPrésent : ${guest.present ? "Oui" : "Non"}`);
     }
 
     function updatePresenceCounter() {
@@ -218,7 +236,7 @@
     }
 
     function showInfos() {
-      alert("Bienvenue dans l'interface d'enregistrement Imagino. Vous pouvez rechercher un invité et marquer sa présence. Les données sont mises à jour automatiquement.");
+      alert("Bienvenue dans l'interface d'enregistrement Imagino. Vous pouvez rechercher un invité, consulter ses infos et marquer sa présence. Les données sont mises à jour automatiquement.");
     }
 
     fetchGuests();
