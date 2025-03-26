@@ -46,6 +46,7 @@
       color: white;
       cursor: pointer;
       font-size: 14px;
+      margin-left: 5px;
     }
     .btn.arrived {
       background: #28a745;
@@ -124,13 +125,23 @@
             <span style="font-size: 12px; color: #666;">${guest.appetence}</span>
           `;
 
-          const button = document.createElement("button");
-          button.className = guest.present ? "btn arrived" : "btn";
-          button.textContent = guest.present ? "Arrivé" : "Présent";
-          button.onclick = () => togglePresence(guest.id);
+          const buttonsDiv = document.createElement("div");
+
+          const presentBtn = document.createElement("button");
+          presentBtn.className = guest.present ? "btn arrived" : "btn";
+          presentBtn.textContent = guest.present ? "Arrivé" : "Présent";
+          presentBtn.onclick = () => togglePresence(guest.id);
+
+          const detailBtn = document.createElement("button");
+          detailBtn.className = "btn";
+          detailBtn.textContent = "Détails";
+          detailBtn.onclick = () => showDetails(guest);
+
+          buttonsDiv.appendChild(presentBtn);
+          buttonsDiv.appendChild(detailBtn);
 
           card.appendChild(infoDiv);
-          card.appendChild(button);
+          card.appendChild(buttonsDiv);
           list.appendChild(card);
         });
     }
@@ -176,6 +187,10 @@
 
     function showInfos() {
       alert("Bienvenue dans l'interface d'enregistrement Imagino. Cochez les invités présents, un SMS leur sera envoyé automatiquement. En fin d'événement, cliquez sur 'Envoyer les factsheets'.");
+    }
+
+    function showDetails(guest) {
+      alert(`Détails de ${guest.name}\nAppétence : ${guest.appetence}\nEmail : test@example.com\nEntreprise : Imagino\nFonction : Responsable Marketing`);
     }
 
     renderGuests();
