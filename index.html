@@ -65,8 +65,19 @@
     }
     .actions {
       display: flex;
-      justify-content: center;
+      justify-content: space-between;
+      align-items: center;
       margin-top: 20px;
+    }
+    .search-bar {
+      margin-bottom: 20px;
+    }
+    .search-bar input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 14px;
     }
   </style>
 </head>
@@ -76,9 +87,16 @@
       <img src="logo.png" alt="Logo Imagino" />
       <h1>Check-in des invités</h1>
     </div>
+
+    <div class="search-bar">
+      <input type="text" id="searchInput" placeholder="Rechercher un invité..." oninput="renderGuests()">
+    </div>
+
     <div id="guestList"></div>
+
     <div class="actions">
       <button class="btn" onclick="sendFactsheets()">Envoyer les factsheets</button>
+      <button class="btn" onclick="showInfos()">Infos</button>
     </div>
   </div>
 
@@ -91,27 +109,30 @@
 
     function renderGuests() {
       const list = document.getElementById("guestList");
+      const searchTerm = document.getElementById("searchInput").value.toLowerCase();
       list.innerHTML = "";
-      guests.forEach((guest) => {
-        const card = document.createElement("div");
-        card.className = "guest-card";
+      guests
+        .filter(g => g.name.toLowerCase().includes(searchTerm))
+        .forEach((guest) => {
+          const card = document.createElement("div");
+          card.className = "guest-card";
 
-        const infoDiv = document.createElement("div");
-        infoDiv.className = "guest-info";
-        infoDiv.innerHTML = `
-          <span><strong>${guest.name}</strong></span>
-          <span style="font-size: 12px; color: #666;">${guest.appetence}</span>
-        `;
+          const infoDiv = document.createElement("div");
+          infoDiv.className = "guest-info";
+          infoDiv.innerHTML = `
+            <span><strong>${guest.name}</strong></span>
+            <span style="font-size: 12px; color: #666;">${guest.appetence}</span>
+          `;
 
-        const button = document.createElement("button");
-        button.className = guest.present ? "btn arrived" : "btn";
-        button.textContent = guest.present ? "Arrivé" : "Présent";
-        button.onclick = () => togglePresence(guest.id);
+          const button = document.createElement("button");
+          button.className = guest.present ? "btn arrived" : "btn";
+          button.textContent = guest.present ? "Arrivé" : "Présent";
+          button.onclick = () => togglePresence(guest.id);
 
-        card.appendChild(infoDiv);
-        card.appendChild(button);
-        list.appendChild(card);
-      });
+          card.appendChild(infoDiv);
+          card.appendChild(button);
+          list.appendChild(card);
+        });
     }
 
     function togglePresence(id) {
@@ -151,6 +172,10 @@
         console.log(`📧 Email envoyé à ${guest.name} avec ${factsheet}`);
       });
       alert("Emails de factsheet envoyés à tous les invités présents.");
+    }
+
+    function showInfos() {
+      alert("Bienvenue dans l'interface d'enregistrement Imagino. Cochez les invités présents, un SMS leur sera envoyé automatiquement. En fin d'événement, cliquez sur 'Envoyer les factsheets'.");
     }
 
     renderGuests();
