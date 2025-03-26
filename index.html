@@ -66,7 +66,7 @@
     }
     .actions {
       display: flex;
-      justify-content: space-between;
+      justify-content: flex-end;
       align-items: center;
       margin-top: 20px;
     }
@@ -86,6 +86,23 @@
       margin-bottom: 15px;
       text-align: center;
     }
+    .pagination {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 15px;
+    }
+    .pagination button {
+      padding: 6px 10px;
+      border: 1px solid #ccc;
+      background: white;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+    .pagination button.active {
+      background: #007bff;
+      color: white;
+    }
   </style>
 </head>
 <body>
@@ -103,18 +120,27 @@
 
     <div id="guestList"></div>
 
+    <div class="pagination" id="pagination"></div>
+
     <div class="actions">
-      <button class="btn" onclick="sendFactsheets()">Envoyer les factsheets</button>
       <button class="btn" onclick="showInfos()">Infos</button>
     </div>
   </div>
 
   <script>
-    const guests = [
-      { id: 1, name: "Alice Dupont", email: "alice.dupont@imagino.com", appetence: "IT-DATA", present: false },
-      { id: 2, name: "Bruno Martin", email: "bruno.martin@imagino.com", appetence: "MARKETING-DIGITAL", present: false },
-      { id: 3, name: "Chloé Bernard", email: "chloe.bernard@imagino.com", appetence: "IT-DATA", present: false },
-    ];
+    const guests = Array.from({ length: 100 }, (_, i) => {
+      return {
+        id: i + 1,
+        name: `Invité ${i + 1}`,
+        email: `invite${i + 1}@imagino.com`,
+        appetence: i % 2 === 0 ? "IT-DATA" : "MARKETING-DIGITAL",
+        entreprise: `Entreprise ${((i % 10) + 1)}`,
+        present: false
+      };
+    });
+
+    const pageSize = 10;
+    let currentPage = 1;
 
     function fetchInitialStatus() {
       guests.forEach(guest => {
@@ -138,9 +164,12 @@
       const list = document.getElementById("guestList");
       const searchTerm = document.getElementById("searchInput").value.toLowerCase();
       list.innerHTML = "";
-      const visibles = guests.filter(g => g.name.toLowerCase().includes(searchTerm));
+      const filtered = guests.filter(g => g.name.toLowerCase().includes(searchTerm));
+      const start = (currentPage - 1) * pageSize;
+      const end = start + pageSize;
+      const pageItems = filtered.slice(start, end);
 
-      visibles.forEach((guest) => {
+      pageItems.forEach((guest) => {
         const card = document.createElement("div");
         card.className = "guest-card";
 
@@ -148,7 +177,7 @@
         infoDiv.className = "guest-info";
         infoDiv.innerHTML = `
           <span><strong>${guest.name}</strong></span>
-          <span style="font-size: 12px; color: #666;">${guest.appetence}</span>
+          <span style="font-size: 12px; color: #666;">${guest.appetence} – ${guest.entreprise}</span>
         `;
 
         const buttonsDiv = document.createElement("div");
@@ -172,6 +201,23 @@
       });
 
       updatePresenceCounter();
+      renderPagination(filtered.length);
+    }
+
+    function renderPagination(totalItems) {
+      const pagination = document.getElementById("pagination");
+      pagination.innerHTML = "";
+      const totalPages = Math.ceil(totalItems / pageSize);
+      for (let i = 1; i <= totalPages; i++) {
+        const btn = document.createElement("button");
+        btn.textContent = i;
+        if (i === currentPage) btn.classList.add("active");
+        btn.onclick = () => {
+          currentPage = i;
+          renderGuests();
+        };
+        pagination.appendChild(btn);
+      }
     }
 
     function updatePresenceCounter() {
@@ -183,10 +229,15 @@
 
     function confirmPresence(id) {
       const guest = guests.find(g => g.id === id);
-      const confirmMsg = `Marquer ${guest.name} comme présent ?`;
+      const confirmMsg = guest.present
+        ? `Marquer ${guest.name} comme absent ?`
+        : `Marquer ${guest.name} comme présent ?`;
+
       if (confirm(confirmMsg)) {
         togglePresence(id);
-        alert(`SMS de bienvenue envoyé à ${guest.name}`);
+        alert(guest.present
+          ? `✅ ${guest.name} est maintenant marqué comme présent. SMS de bienvenue envoyé.`
+          : `❌ ${guest.name} est maintenant marqué comme absent.`);
       }
     }
 
@@ -216,25 +267,12 @@
       .catch(err => console.error("❌ Erreur API Imagino:", err));
     }
 
-    function sendFactsheets() {
-      const presentes = guests.filter(g => g.present);
-      if (presentes.length === 0) {
-        alert("Aucun invité présent !");
-        return;
-      }
-      presentes.forEach((guest) => {
-        const factsheet = guest.appetence === "IT-DATA" ? "Factsheet IT" : "Factsheet Marketing";
-        console.log(`📧 Email envoyé à ${guest.name} avec ${factsheet}`);
-      });
-      alert("Emails de factsheet envoyés à tous les invités présents.");
-    }
-
     function showInfos() {
-      alert("Bienvenue dans l'interface d'enregistrement Imagino. Cochez les invités présents, un SMS leur sera envoyé automatiquement. En fin d'événement, cliquez sur 'Envoyer les factsheets'.");
+      alert("Bienvenue dans l'interface d'enregistrement Imagino. Cochez les invités présents, un SMS leur sera envoyé automatiquement.");
     }
 
     function showDetails(guest) {
-      alert(`Détails de ${guest.name}\nAppétence : ${guest.appetence}\nEmail : ${guest.email}\nEntreprise : Imagino\nFonction : Responsable Marketing`);
+      alert(`Détails de ${guest.name}\nAppétence : ${guest.appetence}\nEntreprise : ${guest.entreprise}\nEmail : ${guest.email}\nFonction : Responsable Marketing`);
     }
 
     fetchInitialStatus();
