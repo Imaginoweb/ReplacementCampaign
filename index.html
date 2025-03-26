@@ -130,7 +130,7 @@
           const presentBtn = document.createElement("button");
           presentBtn.className = guest.present ? "btn arrived" : "btn";
           presentBtn.textContent = guest.present ? "Arrivé" : "Présent";
-          presentBtn.onclick = () => togglePresence(guest.id);
+          presentBtn.onclick = () => confirmPresence(guest.id);
 
           const detailBtn = document.createElement("button");
           detailBtn.className = "btn";
@@ -144,6 +144,15 @@
           card.appendChild(buttonsDiv);
           list.appendChild(card);
         });
+    }
+
+    function confirmPresence(id) {
+      const guest = guests.find(g => g.id === id);
+      const confirmMsg = `Marquer ${guest.name} comme présent ?`;
+      if (confirm(confirmMsg)) {
+        togglePresence(id);
+        alert(`SMS de bienvenue envoyé à ${guest.name}`);
+      }
     }
 
     function togglePresence(id) {
