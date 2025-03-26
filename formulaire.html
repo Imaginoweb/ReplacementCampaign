@@ -47,11 +47,13 @@
       color: white;
       border: none;
       cursor: pointer;
+      padding: 10px;
+      font-size: 14px;
+      border-radius: 8px;
     }
     button:hover {
       background-color: #0056b3;
     }
-    /* Bouton secondaire (ex: Retour) */
     .secondary-btn {
       background-color: #6c757d;
     }
@@ -71,15 +73,9 @@
       <input type="tel" name="mobile" placeholder="Mobile (optionnel)" />
       <input type="text" name="fonction" placeholder="Fonction (optionnel)" />
       <input type="text" name="entreprise" placeholder="Entreprise (optionnel)" />
-      <!-- Retrait de 'Appetence' si non géré par l'API -->
-
+      
       <div class="actions">
-        <!-- Bouton principal : S'enregistrer -->
         <button type="submit">S'enregistrer</button>
-
-        <!-- Bouton secondaire : Retour -->
-        <!-- - history.back() pour revenir à la page précédente
-             - ou window.location.href = "index.html" pour revenir à l'accueil -->
         <button type="button" class="secondary-btn" onclick="window.location.href='index.html'">
           Retour
         </button>
@@ -89,29 +85,84 @@
 
   <script>
     const apiKey = "e5072481-ad27-477f-8d35-702887b9ddde";
+    const apiBaseUrl = "https://imo.prod.imagino.com/ucdapi/Mise_a_jour_contact_Present/v120";
 
     document.getElementById("manualForm").addEventListener("submit", async function (e) {
       e.preventDefault();
 
       const formData = new FormData(this);
-      const email = formData.get("email").trim();
-      const mobile = formData.get("mobile").trim();
+      let email = formData.get("email").trim();
+      let mobile = formData.get("mobile").trim();
+      const prenom = formData.get("prenom").trim();
+      const nom = formData.get("nom").trim();
+      const fonction = formData.get("fonction").trim();
+      const entreprise = formData.get("entreprise").trim();
 
-      // Exemple de vérification d'email (si vous l'utilisez encore)...
-      // ...
+      // 1) Vérification du format de l’email
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        alert("Merci de saisir un email valide.");
+        return;
+      }
 
-      // Construction de l'objet contact
+      // 2) Formatage / validation du numéro de téléphone (si renseigné)
+      if (mobile) {
+        // Si déjà au format international (commence par '+'), on ne fait rien
+        if (!mobile.startsWith('+')) {
+          // Supprime tout caractère non numérique
+          const digits = mobile.replace(/\D/g, '');
+          
+          // Cas 1 : numéro de 10 chiffres commençant par 0 (ex: 06, 07...)
+          if (digits.length === 10 && digits.startsWith('0')) {
+            // On retire le 0 et on ajoute +33
+            mobile = '+33' + digits.substring(1);
+          }
+          // Cas 2 : numéro de 9 chiffres (déjà sans le 0 initial)
+          else if (digits.length === 9) {
+            mobile = '+33' + digits;
+          } else {
+            alert("Le format du numéro est incorrect. Merci de saisir un numéro français valide (ex: 06xxxxxxxx).");
+            return;
+          }
+        }
+      }
+
+      // 3) Vérifier si l'utilisateur existe déjà (via l'email)
+      try {
+        const checkRes = await fetch(`${apiBaseUrl}/contactCampagneModerne/${encodeURIComponent(email)}`, {
+          method: "GET",
+          headers: {
+            accept: "application/json",
+            "X-API-KEY": apiKey
+          }
+        });
+
+        // S'il existe déjà (status 200), on affiche un message particulier
+        if (checkRes.ok) {
+          alert("Un contact avec cet email existe déjà. Mise à jour de ses informations...");
+        } else if (checkRes.status !== 404) {
+          // Autre code que 200 ou 404 => erreur inattendue
+          alert("Erreur lors de la vérification de l'utilisateur. Veuillez réessayer plus tard.");
+          return;
+        }
+      } catch (err) {
+        console.error("Erreur lors de la vérification de l'utilisateur:", err);
+        alert("Erreur lors de la vérification de l'utilisateur. Veuillez réessayer plus tard.");
+        return;
+      }
+
+      // 4) Création ou mise à jour (POST) du contact
       const contact = {
-        Prenom: formData.get("prenom"),
-        Nom: formData.get("nom"),
+        Prenom: prenom,
+        Nom: nom,
         Email: email,
         Mobile: mobile,
-        Fonction: formData.get("fonction"),
-        Entreprise: formData.get("entreprise"),
+        Fonction: fonction,
+        Entreprise: entreprise,
         Present: true
       };
 
-      fetch("https://imo.prod.imagino.com/ucdapi/Mise_a_jour_contact_Present/v120/contactCampagneModerne", {
+      fetch(`${apiBaseUrl}/contactCampagneModerne`, {
         method: "POST",
         headers: {
           accept: "application/json",
@@ -122,8 +173,11 @@
       })
       .then(response => response.json())
       .then(data => {
+        // En cas de succès, l'API renvoie généralement l'objet créé/MAJ avec Email, etc.
         if (data && data.Email) {
-          alert("Merci ! Vous êtes bien enregistré.");
+          // On peut distinguer "création" vs "mise à jour" si l'API renvoie un indicateur spécifique
+          // Pour l'instant, on affiche un message générique
+          alert("Votre inscription est validée avec succès !");
           window.location.href = "index.html";
         } else {
           alert("Une erreur est survenue lors de l'enregistrement. Veuillez vérifier vos informations ou réessayer plus tard.");
