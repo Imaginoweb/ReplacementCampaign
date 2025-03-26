@@ -80,6 +80,12 @@
       border-radius: 8px;
       font-size: 14px;
     }
+    .counter {
+      font-size: 14px;
+      color: #444;
+      margin-bottom: 15px;
+      text-align: center;
+    }
   </style>
 </head>
 <body>
@@ -93,6 +99,8 @@
       <input type="text" id="searchInput" placeholder="Rechercher un invité..." oninput="renderGuests()">
     </div>
 
+    <div class="counter" id="presenceCounter"></div>
+
     <div id="guestList"></div>
 
     <div class="actions">
@@ -103,47 +111,74 @@
 
   <script>
     const guests = [
-      { id: 1, name: "Alice Dupont", appetence: "IT-DATA", present: false },
-      { id: 2, name: "Bruno Martin", appetence: "MARKETING-DIGITAL", present: false },
-      { id: 3, name: "Chloé Bernard", appetence: "IT-DATA", present: false },
+      { id: 1, name: "Alice Dupont", email: "alice.dupont@imagino.com", appetence: "IT-DATA", present: false },
+      { id: 2, name: "Bruno Martin", email: "bruno.martin@imagino.com", appetence: "MARKETING-DIGITAL", present: false },
+      { id: 3, name: "Chloé Bernard", email: "chloe.bernard@imagino.com", appetence: "IT-DATA", present: false },
     ];
+
+    function fetchInitialStatus() {
+      guests.forEach(guest => {
+        fetch(`https://imo.prod.imagino.com/ucdapi/Mise_a_jour_contact_Present/v1.0/contactCampagneModerne/${encodeURIComponent(guest.email)}`, {
+          method: 'GET',
+          headers: {
+            'accept': 'application/json',
+            'X-API-KEY': 'VOTRE_CLE_API_ICI'
+          }
+        })
+        .then(response => response.json())
+        .then(data => {
+          guest.present = data.Present === true;
+          renderGuests();
+        })
+        .catch(err => console.error("Erreur lors de la récupération de l'état initial:", err));
+      });
+    }
 
     function renderGuests() {
       const list = document.getElementById("guestList");
       const searchTerm = document.getElementById("searchInput").value.toLowerCase();
       list.innerHTML = "";
-      guests
-        .filter(g => g.name.toLowerCase().includes(searchTerm))
-        .forEach((guest) => {
-          const card = document.createElement("div");
-          card.className = "guest-card";
+      const visibles = guests.filter(g => g.name.toLowerCase().includes(searchTerm));
 
-          const infoDiv = document.createElement("div");
-          infoDiv.className = "guest-info";
-          infoDiv.innerHTML = `
-            <span><strong>${guest.name}</strong></span>
-            <span style="font-size: 12px; color: #666;">${guest.appetence}</span>
-          `;
+      visibles.forEach((guest) => {
+        const card = document.createElement("div");
+        card.className = "guest-card";
 
-          const buttonsDiv = document.createElement("div");
+        const infoDiv = document.createElement("div");
+        infoDiv.className = "guest-info";
+        infoDiv.innerHTML = `
+          <span><strong>${guest.name}</strong></span>
+          <span style="font-size: 12px; color: #666;">${guest.appetence}</span>
+        `;
 
-          const presentBtn = document.createElement("button");
-          presentBtn.className = guest.present ? "btn arrived" : "btn";
-          presentBtn.textContent = guest.present ? "Arrivé" : "Présent";
-          presentBtn.onclick = () => confirmPresence(guest.id);
+        const buttonsDiv = document.createElement("div");
 
-          const detailBtn = document.createElement("button");
-          detailBtn.className = "btn";
-          detailBtn.textContent = "Détails";
-          detailBtn.onclick = () => showDetails(guest);
+        const presentBtn = document.createElement("button");
+        presentBtn.className = guest.present ? "btn arrived" : "btn";
+        presentBtn.textContent = guest.present ? "Arrivé" : "Présent";
+        presentBtn.onclick = () => confirmPresence(guest.id);
 
-          buttonsDiv.appendChild(presentBtn);
-          buttonsDiv.appendChild(detailBtn);
+        const detailBtn = document.createElement("button");
+        detailBtn.className = "btn";
+        detailBtn.textContent = "Détails";
+        detailBtn.onclick = () => showDetails(guest);
 
-          card.appendChild(infoDiv);
-          card.appendChild(buttonsDiv);
-          list.appendChild(card);
-        });
+        buttonsDiv.appendChild(presentBtn);
+        buttonsDiv.appendChild(detailBtn);
+
+        card.appendChild(infoDiv);
+        card.appendChild(buttonsDiv);
+        list.appendChild(card);
+      });
+
+      updatePresenceCounter();
+    }
+
+    function updatePresenceCounter() {
+      const counter = document.getElementById("presenceCounter");
+      const presents = guests.filter(g => g.present).length;
+      const absents = guests.length - presents;
+      counter.textContent = `${presents} présent(s), ${absents} absent(s)`;
     }
 
     function confirmPresence(id) {
@@ -160,13 +195,13 @@
       guest.present = !guest.present;
       if (guest.present) {
         console.log(`✅ ${guest.name} est présent. SMS envoyé.`);
-        notifyImagino();
+        notifyImagino(guest.email);
       }
       renderGuests();
     }
 
-    function notifyImagino() {
-      fetch('https://imo.prod.imagino.com/ucdapi/Mise_a_jour_contact_Present/v1.0/contactCampagneModerne/quentin.ecuer%40imagino.com', {
+    function notifyImagino(email) {
+      fetch(`https://imo.prod.imagino.com/ucdapi/Mise_a_jour_contact_Present/v1.0/contactCampagneModerne/${encodeURIComponent(email)}`, {
         method: 'GET',
         headers: {
           'accept': 'application/json',
@@ -199,10 +234,10 @@
     }
 
     function showDetails(guest) {
-      alert(`Détails de ${guest.name}\nAppétence : ${guest.appetence}\nEmail : test@example.com\nEntreprise : Imagino\nFonction : Responsable Marketing`);
+      alert(`Détails de ${guest.name}\nAppétence : ${guest.appetence}\nEmail : ${guest.email}\nEntreprise : Imagino\nFonction : Responsable Marketing`);
     }
 
-    renderGuests();
+    fetchInitialStatus();
   </script>
 </body>
 </html>
