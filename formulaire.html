@@ -53,6 +53,8 @@
       <input type="text" name="nom" placeholder="Nom" required />
       <input type="email" name="email" placeholder="Email" required />
       <input type="tel" name="mobile" placeholder="Mobile (optionnel)" />
+      <input type="text" name="fonction" placeholder="Fonction (optionnel)" />
+      <input type="text" name="entreprise" placeholder="Entreprise (optionnel)" />
       <select name="appetence">
         <option value="">Choisissez votre appétence</option>
         <option value="IT-DATA">IT-DATA</option>
@@ -64,19 +66,23 @@
 
   <script>
     const apiKey = "e5072481-ad27-477f-8d35-702887b9ddde";
+
     document.getElementById("manualForm").addEventListener("submit", function (e) {
       e.preventDefault();
+
       const formData = new FormData(this);
       const payload = {
         Prenom: formData.get("prenom"),
         Nom: formData.get("nom"),
         Email: formData.get("email"),
         Mobile: formData.get("mobile"),
+        Fonction: formData.get("fonction"),
+        Entreprise: formData.get("entreprise"),
         Appetence: formData.get("appetence"),
         Present: true
       };
 
-      fetch("https://imo.prod.imagino.com/ucdapi/Mise_a_jour_contact_Present/v1.0/contactCampagneModerne", {
+      fetch("https://imo.prod.imagino.com/ucdapi/Mise_a_jour_contact_Present/v120/contactCampagneModerne", {
         method: "POST",
         headers: {
           accept: "application/json",
