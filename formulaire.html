@@ -107,51 +107,26 @@
 
       // 2) Formatage / validation du numéro de téléphone (si renseigné)
       if (mobile) {
-        // Si déjà au format international (commence par '+'), on ne fait rien
+        // On retire tous les caractères non-chiffres
+        const digits = mobile.replace(/\D/g, '');
+        
+        // Si déjà au format international (+...) => on ne fait rien
+        // Sinon, on tente de convertir en +33
         if (!mobile.startsWith('+')) {
-          // Supprime tout caractère non numérique
-          const digits = mobile.replace(/\D/g, '');
-          
-          // Cas 1 : numéro de 10 chiffres commençant par 0 (ex: 06, 07...)
           if (digits.length === 10 && digits.startsWith('0')) {
-            // On retire le 0 et on ajoute +33
+            // Exemple: 06xxxxxxxx => +336xxxxxxxx
             mobile = '+33' + digits.substring(1);
-          }
-          // Cas 2 : numéro de 9 chiffres (déjà sans le 0 initial)
-          else if (digits.length === 9) {
+          } else if (digits.length === 9) {
+            // Exemple: 612345678 => +33612345678
             mobile = '+33' + digits;
           } else {
-            alert("Le format du numéro est incorrect. Merci de saisir un numéro français valide (ex: 06xxxxxxxx).");
+            alert("Le format du numéro est incorrect. Veuillez saisir un numéro français valide (ex: 06xxxxxxxx).");
             return;
           }
         }
       }
 
-      // 3) Vérifier si l'utilisateur existe déjà (via l'email)
-      try {
-        const checkRes = await fetch(`${apiBaseUrl}/contactCampagneModerne/${encodeURIComponent(email)}`, {
-          method: "GET",
-          headers: {
-            accept: "application/json",
-            "X-API-KEY": apiKey
-          }
-        });
-
-        // S'il existe déjà (status 200), on affiche un message particulier
-        if (checkRes.ok) {
-          alert("Un contact avec cet email existe déjà. Mise à jour de ses informations...");
-        } else if (checkRes.status !== 404) {
-          // Autre code que 200 ou 404 => erreur inattendue
-          alert("Erreur lors de la vérification de l'utilisateur. Veuillez réessayer plus tard.");
-          return;
-        }
-      } catch (err) {
-        console.error("Erreur lors de la vérification de l'utilisateur:", err);
-        alert("Erreur lors de la vérification de l'utilisateur. Veuillez réessayer plus tard.");
-        return;
-      }
-
-      // 4) Création ou mise à jour (POST) du contact
+      // Objet contact à envoyer (Present = true)
       const contact = {
         Prenom: prenom,
         Nom: nom,
@@ -162,31 +137,95 @@
         Present: true
       };
 
-      fetch(`${apiBaseUrl}/contactCampagneModerne`, {
-        method: "POST",
-        headers: {
-          accept: "application/json",
-          "Content-Type": "application/json",
-          "X-API-KEY": apiKey
-        },
-        body: JSON.stringify(contact)
-      })
-      .then(response => response.json())
-      .then(data => {
-        // En cas de succès, l'API renvoie généralement l'objet créé/MAJ avec Email, etc.
-        if (data && data.Email) {
-          // On peut distinguer "création" vs "mise à jour" si l'API renvoie un indicateur spécifique
-          // Pour l'instant, on affiche un message générique
-          alert("Votre inscription est validée avec succès !");
-          window.location.href = "index.html";
-        } else {
-          alert("Une erreur est survenue lors de l'enregistrement. Veuillez vérifier vos informations ou réessayer plus tard.");
+      // 3) Vérifier si l'utilisateur existe déjà
+      let userExists = false;
+      try {
+        const checkRes = await fetch(`${apiBaseUrl}/contactCampagneModerne/${encodeURIComponent(email)}`, {
+          method: "GET",
+          headers: {
+            accept: "application/json",
+            "X-API-KEY": apiKey
+          }
+        });
+
+        if (checkRes.ok) {
+          // S'il existe déjà => status 200
+          userExists = true;
+        } else if (checkRes.status !== 404) {
+          // Autre code que 404 => erreur inattendue
+          alert("Erreur lors de la vérification de l'utilisateur. Veuillez réessayer plus tard.");
+          return;
         }
-      })
-      .catch(error => {
-        console.error("Erreur API:", error);
+      } catch (err) {
+        console.error("Erreur lors de la vérification de l'utilisateur:", err);
+        alert("Erreur lors de la vérification de l'utilisateur. Veuillez réessayer plus tard.");
+        return;
+      }
+
+      try {
+        if (userExists) {
+          // 4a) L'utilisateur existe : on le passe d'abord en 'Absent'
+          const absentBody = {
+            Email: email,
+            Present: false
+          };
+          const absentRes = await fetch(`${apiBaseUrl}/contactCampagneModerne`, {
+            method: "POST",
+            headers: {
+              accept: "application/json",
+              "Content-Type": "application/json",
+              "X-API-KEY": apiKey
+            },
+            body: JSON.stringify(absentBody)
+          });
+          if (!absentRes.ok) {
+            alert("Impossible de mettre le contact à 'Absent'.");
+            return;
+          }
+          
+          // 4b) Ensuite, on met à jour ses informations en 'Présent' (pour déclencher le SMS)
+          const updateRes = await fetch(`${apiBaseUrl}/contactCampagneModerne`, {
+            method: "POST",
+            headers: {
+              accept: "application/json",
+              "Content-Type": "application/json",
+              "X-API-KEY": apiKey
+            },
+            body: JSON.stringify(contact)
+          });
+          const updateData = await updateRes.json();
+
+          if (updateRes.ok && updateData && updateData.Email) {
+            alert("Contact déjà existant. Ses informations ont été mises à jour, et il est à nouveau marqué comme présent !");
+            window.location.href = "index.html";
+          } else {
+            alert("Une erreur est survenue lors de la mise à jour du contact existant.");
+          }
+
+        } else {
+          // 5) Création directe (le contact n'existe pas)
+          const createRes = await fetch(`${apiBaseUrl}/contactCampagneModerne`, {
+            method: "POST",
+            headers: {
+              accept: "application/json",
+              "Content-Type": "application/json",
+              "X-API-KEY": apiKey
+            },
+            body: JSON.stringify(contact)
+          });
+          const createData = await createRes.json();
+
+          if (createRes.ok && createData && createData.Email) {
+            alert("Votre inscription est validée avec succès !");
+            window.location.href = "index.html";
+          } else {
+            alert("Une erreur est survenue lors de la création du contact. Veuillez réessayer plus tard.");
+          }
+        }
+      } catch (error) {
+        console.error("Erreur lors de la création/mise à jour du contact :", error);
         alert("Une erreur est survenue. Merci de réessayer.");
-      });
+      }
     });
   </script>
 </body>
