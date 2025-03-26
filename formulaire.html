@@ -74,42 +74,49 @@
 
     document.getElementById("manualForm").addEventListener("submit", async function (e) {
       e.preventDefault();
-
       const formData = new FormData(this);
       const email = formData.get("email").trim();
       const mobile = formData.get("mobile").trim();
 
       // Vérification de l'existence de l'email
       try {
-        const emailResponse = await fetch(`https://imo.prod.imagino.com/ucdapi/Mise_a_jour_contact_Present/v120/contactCampagneModerne/${encodeURIComponent(email)}`, {
-          method: "GET",
-          headers: {
-            accept: "application/json",
-            "X-API-KEY": apiKey
-          }
-        });
-        if (emailResponse.ok) {
-          alert("Cet email est déjà utilisé.");
-          return; // Arrête le processus d'enregistrement
-        }
-      } catch (err) {
-        // Si l'erreur indique que l'utilisateur n'existe pas (ex : 404), on continue.
-        // Vous pouvez ajouter une gestion plus fine en fonction des codes d'erreur.
-      }
-
-      // Vérification de l'existence du mobile (si renseigné)
-      if (mobile) {
-        try {
-          const allResponse = await fetch("https://imo.prod.imagino.com/ucdapi/Mise_a_jour_contact_Present/v120/contactCampagneModerne?limit=10000", {
+        const emailResponse = await fetch(
+          `https://imo.prod.imagino.com/ucdapi/Mise_a_jour_contact_Present/v120/contactCampagneModerne/${encodeURIComponent(email)}`,
+          {
             method: "GET",
             headers: {
               accept: "application/json",
               "X-API-KEY": apiKey
             }
-          });
+          }
+        );
+        // Si le code de statut n'est pas 404, on considère que l'email existe déjà.
+        if (emailResponse.status !== 404) {
+          alert("Cet email est déjà utilisé.");
+          return;
+        }
+      } catch (err) {
+        console.error("Erreur lors de la vérification de l'email :", err);
+        // En cas d'erreur réseau, vous pouvez décider de bloquer l'enregistrement ou de continuer.
+      }
+
+      // Vérification de l'existence du mobile (si renseigné)
+      if (mobile) {
+        try {
+          const allResponse = await fetch(
+            "https://imo.prod.imagino.com/ucdapi/Mise_a_jour_contact_Present/v120/contactCampagneModerne?limit=10000",
+            {
+              method: "GET",
+              headers: {
+                accept: "application/json",
+                "X-API-KEY": apiKey
+              }
+            }
+          );
           if (allResponse.ok) {
             const allData = await allResponse.json();
-            const duplicateMobile = allData.data.some(contact => contact.Mobile === mobile);
+            const contacts = allData.data || [];
+            const duplicateMobile = contacts.some(contact => contact.Mobile === mobile);
             if (duplicateMobile) {
               alert("Ce numéro de téléphone est déjà utilisé.");
               return;
@@ -143,7 +150,9 @@
       })
       .then(response => response.json())
       .then(data => {
-        if (data && data.success !== false) {
+        // En fonction de la réponse de l'API, vérifiez si la création a bien fonctionné.
+        // Ici, on suppose que l'objet retourné contient la propriété Email en cas de succès.
+        if (data && data.Email) {
           alert("Merci ! Vous êtes bien enregistré.");
           window.location.href = "index.html";
         } else {
@@ -151,7 +160,7 @@
         }
       })
       .catch(error => {
-        console.error("Erreur API:", error);
+        console.error("Erreur API :", error);
         alert("Une erreur est survenue. Merci de réessayer.");
       });
     });
