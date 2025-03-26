@@ -123,7 +123,7 @@
     let guests = [];
 
     function fetchGuests() {
-      fetch("https://imo.prod.imagino.com/ucdapi/Mise_a_jour_contact_Present/v1.0/contactCampagneModerne?limit=10000", {
+      fetch("https://imo.prod.imagino.com/ucdapi/Mise_a_jour_contact_Present/v120/contactCampagneModerne?limit=10000", {
         method: "GET",
         headers: {
           accept: "application/json",
@@ -143,8 +143,8 @@
           mobile: item.Mobile || "",
           prenom: item.Prenom || "",
           nom: item.Nom || "",
-          appetence: item.Appetence || "",
-          entreprise: "",
+          fonction: item.Fonction || "",
+          entreprise: item.Entreprise || "",
           present: item.Present === true
         }));
         document.getElementById("loader").style.display = "none";
@@ -162,9 +162,12 @@
       const searchTerm = document.getElementById("searchInput").value.toLowerCase();
       list.innerHTML = "";
 
+      if (searchTerm.length === 0) return;
+
       const filtered = guests.filter(g =>
         g.name.toLowerCase().includes(searchTerm) ||
-        g.email.toLowerCase().includes(searchTerm)
+        g.email.toLowerCase().includes(searchTerm) ||
+        g.entreprise.toLowerCase().includes(searchTerm)
       );
 
       filtered.forEach((guest) => {
@@ -176,6 +179,7 @@
         infoDiv.innerHTML = `
           <span>${guest.present ? '<span class="status-dot"></span>' : ''}<strong>${guest.name}</strong></span>
           <span style="font-size: 12px; color: #666;">${guest.email}</span>
+          <span style="font-size: 12px; color: #888;">${guest.fonction} – ${guest.entreprise}</span>
         `;
 
         const buttonsDiv = document.createElement("div");
@@ -210,7 +214,7 @@
     }
 
     function updateGuestPresence(guest) {
-      fetch("https://imo.prod.imagino.com/ucdapi/Mise_a_jour_contact_Present/v1.0/contactCampagneModerne", {
+      fetch("https://imo.prod.imagino.com/ucdapi/Mise_a_jour_contact_Present/v120/contactCampagneModerne", {
         method: "POST",
         headers: {
           accept: "application/json",
@@ -219,6 +223,11 @@
         },
         body: JSON.stringify({
           Email: guest.email,
+          Nom: guest.nom,
+          Prenom: guest.prenom,
+          Mobile: guest.mobile,
+          Fonction: guest.fonction,
+          Entreprise: guest.entreprise,
           Present: guest.present
         })
       })
@@ -228,7 +237,7 @@
     }
 
     function showDetails(guest) {
-      alert(`Détails du profil :\n\nNom : ${guest.nom}\nPrénom : ${guest.prenom}\nEmail : ${guest.email}\nMobile : ${guest.mobile}\nPrésent : ${guest.present ? "Oui" : "Non"}`);
+      alert(`Détails du profil :\n\nNom : ${guest.nom}\nPrénom : ${guest.prenom}\nEmail : ${guest.email}\nMobile : ${guest.mobile}\nFonction : ${guest.fonction}\nEntreprise : ${guest.entreprise}\nPrésent : ${guest.present ? "Oui" : "Non"}`);
     }
 
     function updatePresenceCounter() {
@@ -238,11 +247,11 @@
     }
 
     function showInfos() {
-      alert("Bienvenue dans l'interface d'enregistrement Imagino. Vous pouvez rechercher votre nom, consulter vos infos et cliquer sur 'Présent' pour vous enregistrer. Si vous ne figurez pas dans la liste, cliquez sur le bouton prévu.");
+      alert("Bienvenue dans l'interface d'enregistrement Imagino. Recherchez votre nom pour valider votre présence. Si vous ne figurez pas dans la liste, utilisez le bouton prévu.");
     }
 
     function redirectToForm() {
-      window.location.href = "formulaire.html"; // à adapter selon la vraie URL du formulaire
+      window.location.href = "formulaire.html";
     }
 
     fetchGuests();
