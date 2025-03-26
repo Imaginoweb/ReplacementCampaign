@@ -13,7 +13,7 @@
       justify-content: center;
     }
     .container {
-      max-width: 600px;
+      max-width: 700px;
       width: 100%;
       background: #ffffff;
       border-radius: 12px;
@@ -51,10 +51,6 @@
     .btn.arrived {
       background: #28a745;
     }
-    .btn:disabled {
-      background: #ccc;
-      cursor: not-allowed;
-    }
     .header {
       display: flex;
       align-items: center;
@@ -86,22 +82,10 @@
       margin-bottom: 15px;
       text-align: center;
     }
-    .pagination {
-      display: flex;
-      justify-content: center;
-      gap: 10px;
-      margin-top: 15px;
-    }
-    .pagination button {
-      padding: 6px 10px;
-      border: 1px solid #ccc;
-      background: white;
-      cursor: pointer;
-      border-radius: 5px;
-    }
-    .pagination button.active {
-      background: #007bff;
-      color: white;
+    .loader {
+      text-align: center;
+      padding: 20px;
+      font-size: 16px;
     }
   </style>
 </head>
@@ -117,10 +101,8 @@
     </div>
 
     <div class="counter" id="presenceCounter"></div>
-
-    <div id="guestList"></div>
-
-    <div class="pagination" id="pagination"></div>
+    <div id="loader" class="loader">Chargement des invités...</div>
+    <div id="guestList" style="display:none"></div>
 
     <div class="actions">
       <button class="btn" onclick="showInfos()">Infos</button>
@@ -128,35 +110,34 @@
   </div>
 
   <script>
-    const guests = Array.from({ length: 100 }, (_, i) => {
-      return {
-        id: i + 1,
-        name: `Invité ${i + 1}`,
-        email: `invite${i + 1}@imagino.com`,
-        appetence: i % 2 === 0 ? "IT-DATA" : "MARKETING-DIGITAL",
-        entreprise: `Entreprise ${((i % 10) + 1)}`,
-        present: false
-      };
-    });
+    const apiKey = "e5072481-ad27-477f-8d35-702887b9ddde";
+    let guests = [];
 
-    const pageSize = 10;
-    let currentPage = 1;
-
-    function fetchInitialStatus() {
-      guests.forEach(guest => {
-        fetch(`https://imo.prod.imagino.com/ucdapi/Mise_a_jour_contact_Present/v1.0/contactCampagneModerne/${encodeURIComponent(guest.email)}`, {
-          method: 'GET',
-          headers: {
-            'accept': 'application/json',
-            'X-API-KEY': 'VOTRE_CLE_API_ICI'
-          }
-        })
-        .then(response => response.json())
-        .then(data => {
-          guest.present = data.Present === true;
-          renderGuests();
-        })
-        .catch(err => console.error("Erreur lors de la récupération de l'état initial:", err));
+    function fetchGuests() {
+      fetch("https://imo.prod.imagino.com/ucdapi/Mise_a_jour_contact_Present/v1.0/contactCampagneModerne?limit=10000", {
+        method: "GET",
+        headers: {
+          accept: "application/json",
+          "X-API-KEY": apiKey
+        }
+      })
+      .then(response => response.json())
+      .then(data => {
+        guests = data.map((item, i) => ({
+          id: i + 1,
+          name: `${item.Prenom || ""} ${item.Nom || ""}`.trim() || item.Email,
+          email: item.Email,
+          appetence: item.Appetence || "?",
+          entreprise: "",
+          present: item.Present === true
+        }));
+        document.getElementById("loader").style.display = "none";
+        document.getElementById("guestList").style.display = "block";
+        renderGuests();
+      })
+      .catch(error => {
+        document.getElementById("loader").innerText = "Erreur de chargement.";
+        console.error("Erreur chargement des contacts:", error);
       });
     }
 
@@ -164,12 +145,13 @@
       const list = document.getElementById("guestList");
       const searchTerm = document.getElementById("searchInput").value.toLowerCase();
       list.innerHTML = "";
-      const filtered = guests.filter(g => g.name.toLowerCase().includes(searchTerm));
-      const start = (currentPage - 1) * pageSize;
-      const end = start + pageSize;
-      const pageItems = filtered.slice(start, end);
 
-      pageItems.forEach((guest) => {
+      const filtered = guests.filter(g =>
+        g.name.toLowerCase().includes(searchTerm) ||
+        g.email.toLowerCase().includes(searchTerm)
+      );
+
+      filtered.forEach((guest) => {
         const card = document.createElement("div");
         card.className = "guest-card";
 
@@ -177,7 +159,7 @@
         infoDiv.className = "guest-info";
         infoDiv.innerHTML = `
           <span><strong>${guest.name}</strong></span>
-          <span style="font-size: 12px; color: #666;">${guest.appetence} – ${guest.entreprise}</span>
+          <span style="font-size: 12px; color: #666;">${guest.email}</span>
         `;
 
         const buttonsDiv = document.createElement("div");
@@ -185,97 +167,56 @@
         const presentBtn = document.createElement("button");
         presentBtn.className = guest.present ? "btn arrived" : "btn";
         presentBtn.textContent = guest.present ? "Arrivé" : "Présent";
-        presentBtn.onclick = () => confirmPresence(guest.id);
-
-        const detailBtn = document.createElement("button");
-        detailBtn.className = "btn";
-        detailBtn.textContent = "Détails";
-        detailBtn.onclick = () => showDetails(guest);
+        presentBtn.onclick = () => confirmPresence(guest);
 
         buttonsDiv.appendChild(presentBtn);
-        buttonsDiv.appendChild(detailBtn);
-
         card.appendChild(infoDiv);
         card.appendChild(buttonsDiv);
         list.appendChild(card);
       });
 
       updatePresenceCounter();
-      renderPagination(filtered.length);
     }
 
-    function renderPagination(totalItems) {
-      const pagination = document.getElementById("pagination");
-      pagination.innerHTML = "";
-      const totalPages = Math.ceil(totalItems / pageSize);
-      for (let i = 1; i <= totalPages; i++) {
-        const btn = document.createElement("button");
-        btn.textContent = i;
-        if (i === currentPage) btn.classList.add("active");
-        btn.onclick = () => {
-          currentPage = i;
-          renderGuests();
-        };
-        pagination.appendChild(btn);
-      }
-    }
-
-    function updatePresenceCounter() {
-      const counter = document.getElementById("presenceCounter");
-      const presents = guests.filter(g => g.present).length;
-      const absents = guests.length - presents;
-      counter.textContent = `${presents} présent(s), ${absents} absent(s)`;
-    }
-
-    function confirmPresence(id) {
-      const guest = guests.find(g => g.id === id);
+    function confirmPresence(guest) {
       const confirmMsg = guest.present
         ? `Marquer ${guest.name} comme absent ?`
         : `Marquer ${guest.name} comme présent ?`;
 
       if (confirm(confirmMsg)) {
-        togglePresence(id);
+        guest.present = !guest.present;
+        updateGuestPresence(guest);
+        renderGuests();
         alert(guest.present
-          ? `✅ ${guest.name} est maintenant marqué comme présent. SMS de bienvenue envoyé.`
+          ? `✅ ${guest.name} est maintenant marqué comme présent.`
           : `❌ ${guest.name} est maintenant marqué comme absent.`);
       }
     }
 
-    function togglePresence(id) {
-      const guest = guests.find(g => g.id === id);
-      guest.present = !guest.present;
-      if (guest.present) {
-        console.log(`✅ ${guest.name} est présent. SMS envoyé.`);
-        notifyImagino(guest.email);
-      }
-      renderGuests();
-    }
-
-    function notifyImagino(email) {
-      fetch(`https://imo.prod.imagino.com/ucdapi/Mise_a_jour_contact_Present/v1.0/contactCampagneModerne/${encodeURIComponent(email)}`, {
-        method: 'GET',
+    function updateGuestPresence(guest) {
+      fetch(`https://imo.prod.imagino.com/ucdapi/Mise_a_jour_contact_Present/v1.0/contactCampagneModerne/${encodeURIComponent(guest.email)}`, {
+        method: "GET",
         headers: {
-          'accept': 'application/json',
-          'X-API-KEY': 'VOTRE_CLE_API_ICI'
+          accept: "application/json",
+          "X-API-KEY": apiKey
         }
       })
-      .then(response => {
-        if (!response.ok) throw new Error("Erreur API");
-        return response.json();
-      })
-      .then(data => console.log("✅ Appel API Imagino réussi:", data))
-      .catch(err => console.error("❌ Erreur API Imagino:", err));
+        .then(response => response.json())
+        .then(data => console.log("Mise à jour API réussite:", data))
+        .catch(err => console.error("Erreur API:", err));
+    }
+
+    function updatePresenceCounter() {
+      const presentCount = guests.filter(g => g.present).length;
+      const absentCount = guests.length - presentCount;
+      document.getElementById("presenceCounter").innerText = `${presentCount} présent(s), ${absentCount} absent(s)`;
     }
 
     function showInfos() {
-      alert("Bienvenue dans l'interface d'enregistrement Imagino. Cochez les invités présents, un SMS leur sera envoyé automatiquement.");
+      alert("Bienvenue dans l'interface d'enregistrement Imagino. Vous pouvez rechercher un invité et marquer sa présence. Les données sont mises à jour automatiquement.");
     }
 
-    function showDetails(guest) {
-      alert(`Détails de ${guest.name}\nAppétence : ${guest.appetence}\nEntreprise : ${guest.entreprise}\nEmail : ${guest.email}\nFonction : Responsable Marketing`);
-    }
-
-    fetchInitialStatus();
+    fetchGuests();
   </script>
 </body>
 </html>
