@@ -72,16 +72,60 @@
   <script>
     const apiKey = "e5072481-ad27-477f-8d35-702887b9ddde";
 
-    document.getElementById("manualForm").addEventListener("submit", function (e) {
+    document.getElementById("manualForm").addEventListener("submit", async function (e) {
       e.preventDefault();
 
       const formData = new FormData(this);
+      const email = formData.get("email").trim();
+      const mobile = formData.get("mobile").trim();
 
+      // Vérification de l'existence de l'email
+      try {
+        const emailResponse = await fetch(`https://imo.prod.imagino.com/ucdapi/Mise_a_jour_contact_Present/v120/contactCampagneModerne/${encodeURIComponent(email)}`, {
+          method: "GET",
+          headers: {
+            accept: "application/json",
+            "X-API-KEY": apiKey
+          }
+        });
+        if (emailResponse.ok) {
+          alert("Cet email est déjà utilisé.");
+          return; // Arrête le processus d'enregistrement
+        }
+      } catch (err) {
+        // Si l'erreur indique que l'utilisateur n'existe pas (ex : 404), on continue.
+        // Vous pouvez ajouter une gestion plus fine en fonction des codes d'erreur.
+      }
+
+      // Vérification de l'existence du mobile (si renseigné)
+      if (mobile) {
+        try {
+          const allResponse = await fetch("https://imo.prod.imagino.com/ucdapi/Mise_a_jour_contact_Present/v120/contactCampagneModerne?limit=10000", {
+            method: "GET",
+            headers: {
+              accept: "application/json",
+              "X-API-KEY": apiKey
+            }
+          });
+          if (allResponse.ok) {
+            const allData = await allResponse.json();
+            const duplicateMobile = allData.data.some(contact => contact.Mobile === mobile);
+            if (duplicateMobile) {
+              alert("Ce numéro de téléphone est déjà utilisé.");
+              return;
+            }
+          }
+        } catch (err) {
+          console.error("Erreur lors de la vérification du mobile :", err);
+        }
+      }
+
+      // Si aucune duplication n'est trouvée, procédez à l'enregistrement
       const contact = {
         Prenom: formData.get("prenom"),
         Nom: formData.get("nom"),
-        Email: formData.get("email"),
-        Mobile: formData.get("mobile"),
+        Email: email,
+        Mobile: mobile,
         Fonction: formData.get("fonction"),
         Entreprise: formData.get("entreprise"),
         Appetence: formData.get("appetence"),
