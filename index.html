@@ -122,13 +122,13 @@
         }
       })
       .then(response => response.json())
-      .then(data => {
-        console.log("[DATA BRUTE]", data);
-        if (!Array.isArray(data)) {
+      .then(responseData => {
+        console.log("[DATA BRUTE]", responseData);
+        if (!Array.isArray(responseData.data)) {
           document.getElementById("loader").innerText = "Format inattendu de la réponse API.";
           return;
         }
-        guests = data.data.map((item, i) => ({
+        guests = responseData.data.map((item, i) => ({
           id: i + 1,
           name: `${item.Prenom || ""} ${item.Nom || ""}`.trim() || item.Email,
           email: item.Email,
