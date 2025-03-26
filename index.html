@@ -38,6 +38,14 @@
       display: flex;
       flex-direction: column;
     }
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: green;
+      display: inline-block;
+      margin-right: 8px;
+    }
     .btn {
       padding: 8px 12px;
       border: none;
@@ -62,7 +70,7 @@
     }
     .actions {
       display: flex;
-      justify-content: flex-end;
+      justify-content: space-between;
       align-items: center;
       margin-top: 20px;
     }
@@ -106,6 +114,7 @@
 
     <div class="actions">
       <button class="btn" onclick="showInfos()">Infos</button>
+      <button class="btn" onclick="redirectToForm()">Je ne suis pas dans la liste</button>
     </div>
   </div>
 
@@ -123,7 +132,6 @@
       })
       .then(response => response.json())
       .then(responseData => {
-        console.log("[DATA BRUTE]", responseData);
         if (!Array.isArray(responseData.data)) {
           document.getElementById("loader").innerText = "Format inattendu de la réponse API.";
           return;
@@ -166,7 +174,7 @@
         const infoDiv = document.createElement("div");
         infoDiv.className = "guest-info";
         infoDiv.innerHTML = `
-          <span><strong>${guest.name}</strong></span>
+          <span>${guest.present ? '<span class="status-dot"></span>' : ''}<strong>${guest.name}</strong></span>
           <span style="font-size: 12px; color: #666;">${guest.email}</span>
         `;
 
@@ -193,18 +201,12 @@
     }
 
     function confirmPresence(guest) {
-      const confirmMsg = guest.present
-        ? `Marquer ${guest.name} comme absent ?`
-        : `Marquer ${guest.name} comme présent ?`;
-
-      if (confirm(confirmMsg)) {
-        guest.present = !guest.present;
-        updateGuestPresence(guest);
-        renderGuests();
-        alert(guest.present
-          ? `✅ ${guest.name} est maintenant marqué comme présent.`
-          : `❌ ${guest.name} est maintenant marqué comme absent.`);
-      }
+      guest.present = !guest.present;
+      updateGuestPresence(guest);
+      renderGuests();
+      alert(guest.present
+        ? `✅ ${guest.name} est maintenant marqué comme présent.`
+        : `❌ ${guest.name} est maintenant marqué comme absent.`);
     }
 
     function updateGuestPresence(guest) {
@@ -236,7 +238,11 @@
     }
 
     function showInfos() {
-      alert("Bienvenue dans l'interface d'enregistrement Imagino. Vous pouvez rechercher un invité, consulter ses infos et marquer sa présence. Les données sont mises à jour automatiquement.");
+      alert("Bienvenue dans l'interface d'enregistrement Imagino. Vous pouvez rechercher votre nom, consulter vos infos et cliquer sur 'Présent' pour vous enregistrer. Si vous ne figurez pas dans la liste, cliquez sur le bouton prévu.");
+    }
+
+    function redirectToForm() {
+      window.location.href = "formulaire.html"; // à adapter selon la vraie URL du formulaire
     }
 
     fetchGuests();
