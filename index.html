@@ -128,7 +128,7 @@
           document.getElementById("loader").innerText = "Format inattendu de la réponse API.";
           return;
         }
-        guests = data.map((item, i) => ({
+        guests = data.data.map((item, i) => ({
           id: i + 1,
           name: `${item.Prenom || ""} ${item.Nom || ""}`.trim() || item.Email,
           email: item.Email,
