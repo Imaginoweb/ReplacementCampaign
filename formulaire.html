@@ -37,15 +37,26 @@
       border: 1px solid #ccc;
       font-size: 14px;
     }
+    .actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
     button {
       background-color: #007bff;
       color: white;
       border: none;
-      margin-top: 20px;
       cursor: pointer;
     }
     button:hover {
       background-color: #0056b3;
+    }
+    /* Bouton secondaire (ex: Retour) */
+    .secondary-btn {
+      background-color: #6c757d;
+    }
+    .secondary-btn:hover {
+      background-color: #5a6268;
     }
   </style>
 </head>
@@ -60,17 +71,19 @@
       <input type="tel" name="mobile" placeholder="Mobile (optionnel)" />
       <input type="text" name="fonction" placeholder="Fonction (optionnel)" />
       <input type="text" name="entreprise" placeholder="Entreprise (optionnel)" />
-      
-      <!-- On retire Appetence pour le test, car l'API ne le gère pas -->
-      <!--
-      <select name="appetence">
-        <option value="">Choisissez votre appétence</option>
-        <option value="IT-DATA">IT-DATA</option>
-        <option value="MARKETING-DIGITAL">MARKETING-DIGITAL</option>
-      </select>
-      -->
-      
-      <button type="submit">S'enregistrer</button>
+      <!-- Retrait de 'Appetence' si non géré par l'API -->
+
+      <div class="actions">
+        <!-- Bouton principal : S'enregistrer -->
+        <button type="submit">S'enregistrer</button>
+
+        <!-- Bouton secondaire : Retour -->
+        <!-- - history.back() pour revenir à la page précédente
+             - ou window.location.href = "index.html" pour revenir à l'accueil -->
+        <button type="button" class="secondary-btn" onclick="window.location.href='index.html'">
+          Retour
+        </button>
+      </div>
     </form>
   </div>
 
@@ -84,62 +97,10 @@
       const email = formData.get("email").trim();
       const mobile = formData.get("mobile").trim();
 
-      // 1. Vérif email
-      try {
-        const emailResponse = await fetch(
-          `https://imo.prod.imagino.com/ucdapi/Mise_a_jour_contact_Present/v120/contactCampagneModerne/${encodeURIComponent(email)}`,
-          {
-            method: "GET",
-            headers: {
-              accept: "application/json",
-              "X-API-KEY": apiKey
-            }
-          }
-        );
-        console.log("Vérif email - status:", emailResponse.status);
+      // Exemple de vérification d'email (si vous l'utilisez encore)...
+      // ...
 
-        if (emailResponse.status !== 404) {
-          // S'il n'est pas 404, c'est que l'email existe déjà (ou autre erreur).
-          alert("Cet email est déjà utilisé ou la requête a rencontré un problème.");
-          return;
-        }
-      } catch (err) {
-        console.error("Erreur lors de la vérification de l'email :", err);
-        // En cas d'erreur réseau, décidez si vous bloquez l'enregistrement ou pas
-      }
-
-      // 2. Vérif mobile
-      if (mobile) {
-        try {
-          const allResponse = await fetch(
-            "https://imo.prod.imagino.com/ucdapi/Mise_a_jour_contact_Present/v120/contactCampagneModerne?limit=10000",
-            {
-              method: "GET",
-              headers: {
-                accept: "application/json",
-                "X-API-KEY": apiKey
-              }
-            }
-          );
-          console.log("Vérif mobile - status:", allResponse.status);
-
-          if (allResponse.ok) {
-            const allData = await allResponse.json();
-            const contacts = allData.data || [];
-            const duplicateMobile = contacts.some(contact => contact.Mobile === mobile);
-            if (duplicateMobile) {
-              alert("Ce numéro de téléphone est déjà utilisé.");
-              return;
-            }
-          } else {
-            console.warn("Impossible de vérifier le mobile, code HTTP:", allResponse.status);
-          }
-        } catch (err) {
-          console.error("Erreur lors de la vérification du mobile :", err);
-        }
-      }
-
-      // 3. Création du contact
+      // Construction de l'objet contact
       const contact = {
         Prenom: formData.get("prenom"),
         Nom: formData.get("nom"),
@@ -150,8 +111,6 @@
         Present: true
       };
 
-      console.log("Contact à envoyer:", contact);
-
       fetch("https://imo.prod.imagino.com/ucdapi/Mise_a_jour_contact_Present/v120/contactCampagneModerne", {
         method: "POST",
         headers: {
@@ -161,14 +120,8 @@
         },
         body: JSON.stringify(contact)
       })
-      .then(response => {
-        console.log("Création - HTTP status:", response.status);
-        return response.json();
-      })
+      .then(response => response.json())
       .then(data => {
-        console.log("Création - Réponse API:", data);
-
-        // Testez la structure réelle de 'data' (ex: data.Email, data.error, etc.)
         if (data && data.Email) {
           alert("Merci ! Vous êtes bien enregistré.");
           window.location.href = "index.html";
