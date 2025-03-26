@@ -122,12 +122,17 @@
         }
       })
       .then(response => response.json())
-      .then(data => {console.log(data);
+      .then(data => {
+        console.log("[DATA BRUTE]", data);
+        if (!Array.isArray(data)) {
+          document.getElementById("loader").innerText = "Format inattendu de la réponse API.";
+          return;
+        }
         guests = data.map((item, i) => ({
           id: i + 1,
           name: `${item.Prenom || ""} ${item.Nom || ""}`.trim() || item.Email,
           email: item.Email,
-          appetence: item.Appetence || "?",
+          appetence: item.Appetence || "",
           entreprise: "",
           present: item.Present === true
         }));
@@ -136,8 +141,8 @@
         renderGuests();
       })
       .catch(error => {
-        document.getElementById("loader").innerText = "Erreur de chargement.";
         console.error("Erreur chargement des contacts:", error);
+        document.getElementById("loader").innerText = "Erreur de chargement.";
       });
     }
 
