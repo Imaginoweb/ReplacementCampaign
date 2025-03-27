@@ -1,80 +1,97 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin - Imagino</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/chart.js" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
       font-family: sans-serif;
       background: #f4f4f4;
-      padding: 20px;
+      padding: 40px;
       display: flex;
       justify-content: center;
     }
     .container {
-      max-width: 1000px;
       width: 100%;
+      max-width: 1200px;
       background: white;
-      padding: 30px;
-      border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      padding: 40px;
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
     }
     h1 {
-      font-size: 24px;
-      margin-bottom: 20px;
+      font-size: 28px;
+      margin-bottom: 30px;
+      font-weight: 600;
     }
     .actions {
       margin-bottom: 20px;
+      display: flex;
+      gap: 10px;
     }
     .btn {
-      padding: 8px 12px;
-      border: none;
-      border-radius: 5px;
       background: #007bff;
       color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 16px;
       cursor: pointer;
       font-size: 14px;
-      margin-right: 10px;
+      transition: background 0.2s;
+    }
+    .btn:hover {
+      background: #0056b3;
+    }
+    .filter {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      align-items: center;
+    }
+    select, input[type="text"] {
+      padding: 10px;
+      font-size: 14px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
     }
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 20px;
-    }
-    table, th, td {
-      border: 1px solid #ddd;
+      margin-bottom: 40px;
     }
     th, td {
-      padding: 10px;
+      padding: 12px;
+      border: 1px solid #eee;
       text-align: left;
     }
     th {
-      background-color: #f0f0f0;
+      background-color: #f9f9f9;
+      font-weight: bold;
       cursor: pointer;
     }
-    .filter {
-      margin-bottom: 15px;
+    .presence-yes {
+      color: green;
+      font-size: 16px;
     }
-    select, input[type="text"] {
-      padding: 8px;
-      margin-right: 10px;
-      border-radius: 5px;
-      border: 1px solid #ccc;
+    .presence-no {
+      color: red;
+      font-size: 16px;
     }
-    canvas {
-      max-width: 400px;
-      margin-top: 20px;
+    .chart-container {
+      max-width: 300px;
+      margin: 0 auto;
     }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>Admin - Gestion des invités</h1>
+
     <div class="actions">
-      <button class="btn" onclick="exportGuests()">Exporter CSV</button>
-      <button class="btn" onclick="loadGuests()">Recharger les données</button>
+      <button class="btn" onclick="exportGuests()">📄 Exporter CSV</button>
+      <button class="btn" onclick="loadGuests()">🔄 Recharger les données</button>
     </div>
 
     <div class="filter">
@@ -85,7 +102,7 @@
         <option value="VIP">VIP</option>
         <option value="Staff">Staff</option>
       </select>
-      <input type="text" id="search" placeholder="Recherche par nom..." oninput="renderGuestTable()" />
+      <input type="text" id="search" placeholder="Rechercher par nom..." oninput="renderGuestTable()">
     </div>
 
     <table id="guestTable">
@@ -103,7 +120,9 @@
       <tbody></tbody>
     </table>
 
-    <canvas id="chart"></canvas>
+    <div class="chart-container">
+      <canvas id="chart"></canvas>
+    </div>
   </div>
 
   <script>
@@ -152,7 +171,7 @@
           <td>${g.Nom}</td>
           <td>${g.Email}</td>
           <td>${g.Entreprise || ''}</td>
-          <td>${g.Present ? '✔️' : '❌'}</td>
+          <td class="${g.Present ? 'presence-yes' : 'presence-no'}">${g.Present ? '✔️' : '❌'}</td>
           <td>${g.Tag}</td>
           <td>${g.CheckInTime}</td>
         `;
@@ -199,13 +218,21 @@
           }]
         },
         options: {
-          responsive: true
+          responsive: true,
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: {
+                font: { size: 14 },
+                color: '#444'
+              }
+            }
+          }
         }
       });
     }
 
     loadGuests();
   </script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </body>
 </html>
