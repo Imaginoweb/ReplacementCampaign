@@ -22,7 +22,8 @@
       position: relative;
     }
     h1 {
-      font-size: 24px;
+      font-size: 26px;
+      font-weight: bold;
       margin: 0;
     }
     .guest-card {
@@ -48,14 +49,17 @@
       margin-right: 8px;
     }
     .btn {
-      padding: 8px 12px;
+      padding: 10px 16px;
       border: none;
-      border-radius: 5px;
+      border-radius: 8px;
       background: #007bff;
       color: white;
       cursor: pointer;
       font-size: 14px;
-      margin-left: 5px;
+      transition: background 0.2s ease;
+    }
+    .btn:hover {
+      background-color: #0056b3;
     }
     .btn.arrived {
       background: #28a745;
@@ -66,12 +70,13 @@
       justify-content: space-between;
       margin-bottom: 30px;
     }
-    .header img {
-      height: 50px;
-      margin-right: 20px;
+    .logo-title {
+      display: flex;
+      align-items: center;
+      gap: 20px;
     }
-    .header h1 {
-      font-size: 24px;
+    .header img {
+      height: 60px;
     }
     .actions {
       display: flex;
@@ -84,9 +89,9 @@
     }
     .search-bar input {
       width: 100%;
-      padding: 10px;
+      padding: 12px;
       border: 1px solid #ccc;
-      border-radius: 8px;
+      border-radius: 10px;
       font-size: 14px;
     }
     .counter {
@@ -102,8 +107,8 @@
     }
     .admin-access {
       position: absolute;
-      top: 20px;
-      right: 20px;
+      top: 30px;
+      right: 30px;
     }
   </style>
 </head>
@@ -114,8 +119,10 @@
     </div>
 
     <div class="header">
-      <img src="logo.png" alt="Logo Imagino" />
-      <h1>Check-in des invités</h1>
+      <div class="logo-title">
+        <img src="logo.png" alt="Logo Imagino" />
+        <h1>Check-in des invités</h1>
+      </div>
     </div>
 
     <div class="search-bar">
