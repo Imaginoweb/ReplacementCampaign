@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin - Imagino</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/chart.js" />
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #f4f4f4;
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+    }
+    .container {
+      max-width: 1000px;
+      width: 100%;
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    h1 {
+      font-size: 24px;
+      margin-bottom: 20px;
+    }
+    .actions {
+      margin-bottom: 20px;
+    }
+    .btn {
+      padding: 8px 12px;
+      border: none;
+      border-radius: 5px;
+      background: #007bff;
+      color: white;
+      cursor: pointer;
+      font-size: 14px;
+      margin-right: 10px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    table, th, td {
+      border: 1px solid #ddd;
+    }
+    th, td {
+      padding: 10px;
+      text-align: left;
+    }
+    th {
+      background-color: #f0f0f0;
+      cursor: pointer;
+    }
+    .filter {
+      margin-bottom: 15px;
+    }
+    select, input[type="text"] {
+      padding: 8px;
+      margin-right: 10px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+    canvas {
+      max-width: 400px;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Admin - Gestion des invités</h1>
+    <div class="actions">
+      <button class="btn" onclick="exportGuests()">Exporter CSV</button>
+      <button class="btn" onclick="loadGuests()">Recharger les données</button>
+    </div>
+
+    <div class="filter">
+      <select id="tagFilter" onchange="renderGuestTable()">
+        <option value="">Tous les groupes</option>
+        <option value="IT">IT</option>
+        <option value="Marketing">Marketing</option>
+        <option value="VIP">VIP</option>
+        <option value="Staff">Staff</option>
+      </select>
+      <input type="text" id="search" placeholder="Recherche par nom..." oninput="renderGuestTable()" />
+    </div>
+
+    <table id="guestTable">
+      <thead>
+        <tr>
+          <th onclick="sortTable('prenom')">Prénom</th>
+          <th onclick="sortTable('nom')">Nom</th>
+          <th>Email</th>
+          <th>Entreprise</th>
+          <th>Présence</th>
+          <th>Tag</th>
+          <th>Check-in</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <canvas id="chart"></canvas>
+  </div>
+
+  <script>
+    let guests = [];
+    let sortKey = '';
+    let sortAsc = true;
+
+    function loadGuests() {
+      fetch("https://imo.prod.imagino.com/ucdapi/Mise_a_jour_contact_Present/v120/contactCampagneModerne?limit=10000", {
+        headers: { "X-API-KEY": "e5072481-ad27-477f-8d35-702887b9ddde" }
+      })
+        .then(res => res.json())
+        .then(data => {
+          guests = data.data.map(g => ({
+            ...g,
+            Tag: ['IT', 'Marketing', 'VIP', 'Staff'][Math.floor(Math.random()*4)],
+            CheckInTime: g.Present ? new Date().toLocaleString() : ''
+          }));
+          renderGuestTable();
+          renderChart();
+        });
+    }
+
+    function renderGuestTable() {
+      const tbody = document.querySelector("#guestTable tbody");
+      tbody.innerHTML = "";
+      const tag = document.getElementById("tagFilter").value;
+      const search = document.getElementById("search").value.toLowerCase();
+      let filtered = guests.filter(g =>
+        (!tag || g.Tag === tag) &&
+        (!search || g.Nom.toLowerCase().includes(search))
+      );
+
+      if (sortKey) {
+        filtered.sort((a, b) => {
+          const valA = a[sortKey]?.toLowerCase?.() || '';
+          const valB = b[sortKey]?.toLowerCase?.() || '';
+          return sortAsc ? valA.localeCompare(valB) : valB.localeCompare(valA);
+        });
+      }
+
+      filtered.forEach(g => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${g.Prenom}</td>
+          <td>${g.Nom}</td>
+          <td>${g.Email}</td>
+          <td>${g.Entreprise || ''}</td>
+          <td>${g.Present ? '✔️' : '❌'}</td>
+          <td>${g.Tag}</td>
+          <td>${g.CheckInTime}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function sortTable(key) {
+      if (sortKey === key) sortAsc = !sortAsc;
+      else {
+        sortKey = key;
+        sortAsc = true;
+      }
+      renderGuestTable();
+    }
+
+    function exportGuests() {
+      const headers = ["Prénom", "Nom", "Email", "Entreprise", "Présence", "Tag", "Check-in"];
+      const rows = guests.map(g => [
+        g.Prenom, g.Nom, g.Email, g.Entreprise, g.Present ? 'Présent' : 'Absent', g.Tag, g.CheckInTime
+      ]);
+      const csvContent = [headers, ...rows].map(e => e.join(",")).join("\n");
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", "invites.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    function renderChart() {
+      const ctx = document.getElementById("chart").getContext("2d");
+      const presentCount = guests.filter(g => g.Present).length;
+      const absentCount = guests.length - presentCount;
+      new Chart(ctx, {
+        type: 'pie',
+        data: {
+          labels: ['Présents', 'Absents'],
+          datasets: [{
+            data: [presentCount, absentCount],
+            backgroundColor: ['#28a745', '#dc3545']
+          }]
+        },
+        options: {
+          responsive: true
+        }
+      });
+    }
+
+    loadGuests();
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</body>
+</html>
