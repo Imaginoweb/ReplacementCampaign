@@ -21,10 +21,37 @@
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
       position: relative;
     }
+    .admin-access {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+    }
     h1 {
       font-size: 26px;
-      font-weight: bold;
       margin: 0;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 30px;
+    }
+    .logo-title {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+    .logo-title img {
+      height: 50px;
+    }
+    .search-bar {
+      margin-bottom: 20px;
+    }
+    .search-bar input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
     }
     .guest-card {
       background: #f9f9f9;
@@ -40,75 +67,31 @@
       display: flex;
       flex-direction: column;
     }
-    .status-dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      background: green;
-      display: inline-block;
-      margin-right: 8px;
-    }
     .btn {
-      padding: 10px 16px;
+      padding: 10px 14px;
       border: none;
-      border-radius: 8px;
+      border-radius: 6px;
       background: #007bff;
       color: white;
       cursor: pointer;
-      font-size: 14px;
-      transition: background 0.2s ease;
-    }
-    .btn:hover {
-      background-color: #0056b3;
+      margin-left: 6px;
     }
     .btn.arrived {
       background: #28a745;
     }
-    .header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 30px;
-    }
-    .logo-title {
-      display: flex;
-      align-items: center;
-      gap: 20px;
-    }
-    .header img {
-      height: 60px;
-    }
     .actions {
       display: flex;
       justify-content: space-between;
-      align-items: center;
       margin-top: 20px;
     }
-    .search-bar {
-      margin-bottom: 20px;
-    }
-    .search-bar input {
-      width: 100%;
-      padding: 12px;
-      border: 1px solid #ccc;
-      border-radius: 10px;
-      font-size: 14px;
-    }
     .counter {
-      font-size: 14px;
-      color: #444;
-      margin-bottom: 15px;
       text-align: center;
+      margin-bottom: 10px;
     }
     .loader {
       text-align: center;
-      padding: 20px;
       font-size: 16px;
-    }
-    .admin-access {
-      position: absolute;
-      top: 30px;
-      right: 30px;
+      padding: 20px;
     }
   </style>
 </head>
@@ -131,7 +114,7 @@
 
     <div class="counter" id="presenceCounter"></div>
     <div id="loader" class="loader">Chargement des invités...</div>
-    <div id="guestList" style="display:none"></div>
+    <div id="guestList" style="display:none;"></div>
 
     <div class="actions">
       <button class="btn" onclick="showInfos()">Infos</button>
@@ -140,155 +123,143 @@
   </div>
 
   <script>
-  const apiKey = "e5072481-ad27-477f-8d35-702887b9ddde";
-  let guests = [];
+    const apiKey = "e5072481-ad27-477f-8d35-702887b9ddde";
+    let guests = [];
 
-  function fetchGuests() {
-    fetch("https://imo.prod.imagino.com/ucdapi/Mise_a_jour_contact_Present/v120/contactCampagneModerne?limit=10000", {
-      method: "GET",
-      headers: {
-        accept: "application/json",
-        "X-API-KEY": apiKey
-      }
-    })
-    .then(response => response.json())
-    .then(responseData => {
-      if (!Array.isArray(responseData.data)) {
-        document.getElementById("loader").innerText = "Format inattendu de la réponse API.";
-        return;
-      }
-      guests = responseData.data.map((item, i) => ({
-        id: i + 1,
-        nom: item.Nom?.trim() || "",
-        prenom: item.Prenom?.trim() || "",
-        email: item.Email || "",
-        mobile: item.Mobile || "",
-        fonction: item.Fonction || "",
-        entreprise: item.Entreprise || "",
-        present: item.Present === true,
-        dateArrivee: item.DateArrivee || ""
-      }));
-      document.getElementById("loader").style.display = "none";
-      document.getElementById("guestList").style.display = "block";
-      renderGuests();
-    })
-    .catch(error => {
-      console.error("Erreur chargement des contacts:", error);
-      document.getElementById("loader").innerText = "Erreur de chargement.";
-    });
-  }
-
-  function renderGuests() {
-    const list = document.getElementById("guestList");
-    const searchTerm = document.getElementById("searchInput").value.toLowerCase().trim();
-    list.innerHTML = "";
-
-    if (searchTerm.length < 2) return;
-
-    const filtered = guests.filter(g =>
-      g.nom.toLowerCase().includes(searchTerm) ||
-      g.prenom.toLowerCase().includes(searchTerm)
-    );
-
-    filtered.forEach((guest) => {
-      const card = document.createElement("div");
-      card.className = "guest-card";
-
-      const infoDiv = document.createElement("div");
-      infoDiv.className = "guest-info";
-      const fullName = `${guest.prenom} ${guest.nom}`.trim();
-      infoDiv.innerHTML = `
-        <span>${guest.present ? '<span class="status-dot"></span>' : ''}<strong>${fullName}</strong></span>
-        <span style="font-size: 12px; color: #666;">${guest.email}</span>
-        <span style="font-size: 12px; color: #888;">${guest.fonction} – ${guest.entreprise}</span>
-      `;
-
-      const buttonsDiv = document.createElement("div");
-
-      const presentBtn = document.createElement("button");
-      presentBtn.className = guest.present ? "btn arrived" : "btn";
-      presentBtn.textContent = guest.present ? "Arrivé" : "Présent";
-      presentBtn.onclick = () => confirmPresence(guest);
-
-      const detailBtn = document.createElement("button");
-      detailBtn.className = "btn";
-      detailBtn.textContent = "Détails";
-      detailBtn.onclick = () => showDetails(guest);
-
-      buttonsDiv.appendChild(presentBtn);
-      buttonsDiv.appendChild(detailBtn);
-      card.appendChild(infoDiv);
-      card.appendChild(buttonsDiv);
-      list.appendChild(card);
-    });
-
-    updatePresenceCounter();
-  }
-
-  function confirmPresence(guest) {
-    guest.present = !guest.present;
-    if (guest.present && !guest.dateArrivee) {
-      guest.dateArrivee = new Date().toISOString();
-    }
-    updateGuestPresence(guest);
-    renderGuests();
-    alert(guest.present
-      ? `✅ ${guest.prenom} ${guest.nom} est maintenant marqué comme présent.`
-      : `❌ ${guest.prenom} ${guest.nom} est maintenant marqué comme absent.`);
-  }
-
-  function updateGuestPresence(guest) {
-    fetch("https://imo.prod.imagino.com/ucdapi/Mise_a_jour_contact_Present/v120/contactCampagneModerne", {
-      method: "POST",
-      headers: {
-        accept: "application/json",
-        "Content-Type": "application/json",
-        "X-API-KEY": apiKey
-      },
-      body: JSON.stringify({
-        Email: guest.email,
-        Nom: guest.nom,
-        Prenom: guest.prenom,
-        Mobile: guest.mobile,
-        Fonction: guest.fonction,
-        Entreprise: guest.entreprise,
-        Present: guest.present,
-        DateArrivee: guest.dateArrivee || null
+    function fetchGuests() {
+      fetch("https://imo.prod.imagino.com/ucdapi/Mise_a_jour_contact_Present/v120/contactCampagneModerne?limit=10000", {
+        headers: {
+          accept: "application/json",
+          "X-API-KEY": apiKey
+        }
       })
-    })
-    .then(response => response.json())
-    .then(data => console.log("Mise à jour API réussie:", data))
-    .catch(err => console.error("Erreur API mise à jour:", err));
-  }
-
-  function showDetails(guest) {
-    alert(`Détails du profil :\n\nNom : ${guest.nom}\nPrénom : ${guest.prenom}\nEmail : ${guest.email}\nMobile : ${guest.mobile}\nFonction : ${guest.fonction}\nEntreprise : ${guest.entreprise}\nPrésent : ${guest.present ? "Oui" : "Non"}`);
-  }
-
-  function updatePresenceCounter() {
-    const presentCount = guests.filter(g => g.present).length;
-    const absentCount = guests.length - presentCount;
-    document.getElementById("presenceCounter").innerText = `${presentCount} présent(s), ${absentCount} absent(s)`;
-  }
-
-  function showInfos() {
-    alert("Bienvenue dans l'interface d'enregistrement Imagino. Recherchez votre nom pour valider votre présence. Si vous ne figurez pas dans la liste, utilisez le bouton prévu.");
-  }
-
-  function redirectToForm() {
-    window.location.href = "formulaire.html";
-  }
-
-  function accessAdmin() {
-    const pw = prompt("Mot de passe requis :");
-    if (pw === "Marketing") {
-      window.location.href = "admin.html";
-    } else {
-      alert("Mot de passe incorrect.");
+      .then(res => res.json())
+      .then(data => {
+        guests = data.data.map((item, i) => ({
+          id: i + 1,
+          nom: item.Nom?.trim() || "",
+          prenom: item.Prenom?.trim() || "",
+          email: item.Email || "",
+          mobile: item.Mobile || "",
+          fonction: item.Fonction || "",
+          entreprise: item.Entreprise || "",
+          present: item.Present === true,
+          dateArrivee: item.DateArrivee || ""
+        }));
+        document.getElementById("loader").style.display = "none";
+        document.getElementById("guestList").style.display = "block";
+        renderGuests();
+      });
     }
-  }
 
-  fetchGuests();
-</script>
+    function renderGuests() {
+      const search = document.getElementById("searchInput").value.toLowerCase();
+      const list = document.getElementById("guestList");
+      list.innerHTML = "";
+
+      if (search.length < 2) return;
+
+      const results = guests.filter(g =>
+        g.nom.toLowerCase().includes(search) || g.prenom.toLowerCase().includes(search)
+      );
+
+      results.forEach(guest => {
+        const card = document.createElement("div");
+        card.className = "guest-card";
+
+        const info = document.createElement("div");
+        info.className = "guest-info";
+        info.innerHTML = `
+          <strong>${guest.prenom} ${guest.nom}</strong>
+          <small>${guest.email}</small>
+          <small>${guest.fonction} – ${guest.entreprise}</small>
+        `;
+
+        const btnGroup = document.createElement("div");
+
+        const btnCheck = document.createElement("button");
+        btnCheck.className = guest.present ? "btn arrived" : "btn";
+        btnCheck.textContent = guest.present ? "Arrivé" : "Présent";
+        btnCheck.onclick = () => togglePresence(guest);
+
+        const btnDetails = document.createElement("button");
+        btnDetails.className = "btn";
+        btnDetails.textContent = "Détails";
+        btnDetails.onclick = () => showDetails(guest);
+
+        btnGroup.appendChild(btnCheck);
+        btnGroup.appendChild(btnDetails);
+
+        card.appendChild(info);
+        card.appendChild(btnGroup);
+        list.appendChild(card);
+      });
+
+      updatePresenceCounter();
+    }
+
+    function togglePresence(guest) {
+      guest.present = !guest.present;
+      if (guest.present && !guest.dateArrivee) {
+        guest.dateArrivee = new Date().toISOString();
+      }
+      updateGuestRCU(guest);
+      renderGuests();
+    }
+
+    function updateGuestRCU(guest) {
+      fetch("https://imo.prod.imagino.com/ucdapi/Mise_a_jour_contact_Present/v120/contactCampagneModerne", {
+        method: "POST",
+        headers: {
+          accept: "application/json",
+          "Content-Type": "application/json",
+          "X-API-KEY": apiKey
+        },
+        body: JSON.stringify({
+          Email: guest.email,
+          Nom: guest.nom,
+          Prenom: guest.prenom,
+          Mobile: guest.mobile,
+          Fonction: guest.fonction,
+          Entreprise: guest.entreprise,
+          Present: guest.present,
+          DateArrivee: guest.present ? guest.dateArrivee : null
+        })
+      })
+      .then(res => res.json())
+      .then(data => console.log("✅ RCU mis à jour :", data))
+      .catch(err => console.error("❌ Erreur RCU :", err));
+    }
+
+    function showDetails(guest) {
+      alert(`Nom : ${guest.nom}\nPrénom : ${guest.prenom}\nEmail : ${guest.email}\nMobile : ${guest.mobile}\nFonction : ${guest.fonction}\nEntreprise : ${guest.entreprise}\nPrésent : ${guest.present ? "Oui" : "Non"}\nDate d'arrivée : ${guest.dateArrivee || "–"}`);
+    }
+
+    function updatePresenceCounter() {
+      const total = guests.length;
+      const present = guests.filter(g => g.present).length;
+      const absent = total - present;
+      document.getElementById("presenceCounter").textContent = `${present} présent(s), ${absent} absent(s)`;
+    }
+
+    function redirectToForm() {
+      window.location.href = "formulaire.html";
+    }
+
+    function accessAdmin() {
+      const pw = prompt("Mot de passe requis :");
+      if (pw === "Marketing") {
+        window.location.href = "admin_dashboard.html";
+      } else {
+        alert("Mot de passe incorrect.");
+      }
+    }
+
+    function showInfos() {
+      alert("Recherchez votre nom pour valider votre présence. Si vous ne figurez pas dans la liste, cliquez sur le bouton prévu.");
+    }
+
+    fetchGuests();
+  </script>
 </body>
 </html>
