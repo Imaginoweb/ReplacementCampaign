@@ -19,6 +19,7 @@
       border-radius: 12px;
       padding: 30px;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      position: relative;
     }
     h1 {
       font-size: 24px;
@@ -62,7 +63,7 @@
     .header {
       display: flex;
       align-items: center;
-      gap: 20px;
+      justify-content: space-between;
       margin-bottom: 30px;
     }
     .header img {
@@ -95,10 +96,19 @@
       padding: 20px;
       font-size: 16px;
     }
+    .admin-access {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+    }
   </style>
 </head>
 <body>
   <div class="container">
+    <div class="admin-access">
+      <button class="btn" onclick="accessAdmin()">Accès Admin</button>
+    </div>
+
     <div class="header">
       <img src="logo.png" alt="Logo Imagino" />
       <h1>Check-in des invités</h1>
@@ -161,20 +171,13 @@
     const searchTerm = document.getElementById("searchInput").value.toLowerCase().trim();
     list.innerHTML = "";
 
-    // Afficher les résultats uniquement si la recherche comporte au moins 2 caractères
-    if (searchTerm.length < 2) {
-      // Optionnel : masquer la liste ou afficher un message
-      // list.style.display = "none";
-      return;
-    }
+    if (searchTerm.length < 2) return;
 
-    // Filtrer uniquement sur le nom et le prénom
     const filtered = guests.filter(g =>
       g.nom.toLowerCase().includes(searchTerm) ||
       g.prenom.toLowerCase().includes(searchTerm)
     );
 
-    // Afficher les résultats filtrés
     filtered.forEach((guest) => {
       const card = document.createElement("div");
       card.className = "guest-card";
@@ -260,7 +263,15 @@
     window.location.href = "formulaire.html";
   }
 
-  // Charger la liste des invités dès le chargement
+  function accessAdmin() {
+    const pw = prompt("Mot de passe requis :");
+    if (pw === "Marketing") {
+      window.location.href = "admin_dashboard.html";
+    } else {
+      alert("Mot de passe incorrect.");
+    }
+  }
+
   fetchGuests();
 </script>
 </body>
