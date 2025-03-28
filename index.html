@@ -127,7 +127,7 @@
     let guests = [];
 
     function fetchGuests() {
-      fetch("https://imo.prod.imagino.com/ucdapi/Mise_a_jour_contact_Present/v3/contactCampagneModerne?limit=10000", {
+      fetch("https://imo.prod.imagino.com/ucdapi/Mise_a_jour_contact_Present/v4/contactCampagneModerne?limit=10000", {
         headers: {
           accept: "application/json",
           "X-API-KEY": apiKey
@@ -208,7 +208,7 @@
     }
 
     function updateGuestRCU(guest) {
-      fetch("https://imo.prod.imagino.com/ucdapi/Mise_a_jour_contact_Present/v3/contactCampagneModerne", {
+      fetch("https://imo.prod.imagino.com/ucdapi/Mise_a_jour_contact_Present/v4/contactCampagneModerne", {
         method: "POST",
         headers: {
           accept: "application/json",
