@@ -127,7 +127,7 @@
     let guests = [];
 
     function fetchGuests() {
-      fetch("https://imo.prod.imagino.com/ucdapi/Mise_a_jour_contact_Present/v120/contactCampagneModerne?limit=10000", {
+      fetch("https://imo.prod.imagino.com/ucdapi/Mise_a_jour_contact_Present/v3/contactCampagneModerne?limit=10000", {
         headers: {
           accept: "application/json",
           "X-API-KEY": apiKey
@@ -144,7 +144,7 @@
           fonction: item.Fonction || "",
           entreprise: item.Entreprise || "",
           present: item.Present === true,
-          dateArrivee: item.DateArrivee || ""
+          dateArrivee: item.Date_Arrivee || ""
         }));
         document.getElementById("loader").style.display = "none";
         document.getElementById("guestList").style.display = "block";
@@ -208,7 +208,7 @@
     }
 
     function updateGuestRCU(guest) {
-      fetch("https://imo.prod.imagino.com/ucdapi/Mise_a_jour_contact_Present/v120/contactCampagneModerne", {
+      fetch("https://imo.prod.imagino.com/ucdapi/Mise_a_jour_contact_Present/v3/contactCampagneModerne", {
         method: "POST",
         headers: {
           accept: "application/json",
@@ -223,7 +223,7 @@
           Fonction: guest.fonction,
           Entreprise: guest.entreprise,
           Present: guest.present,
-          DateArrivee: guest.present ? guest.dateArrivee : null
+          Date_Arrivee: guest.present ? guest.dateArrivee : null
         })
       })
       .then(res => res.json())
