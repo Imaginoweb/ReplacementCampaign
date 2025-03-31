@@ -1,129 +1,4 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin - Imagino</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <style>
-    body {
-      font-family: sans-serif;
-      background: #f4f4f4;
-      padding: 40px;
-      display: flex;
-      justify-content: center;
-    }
-    .container {
-      width: 100%;
-      max-width: 1200px;
-      background: white;
-      padding: 40px;
-      border-radius: 16px;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
-    }
-    h1 {
-      font-size: 28px;
-      margin-bottom: 30px;
-      font-weight: 600;
-    }
-    .actions {
-      margin-bottom: 20px;
-      display: flex;
-      gap: 10px;
-    }
-    .btn {
-      background: #007bff;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      padding: 10px 16px;
-      cursor: pointer;
-      font-size: 14px;
-      transition: background 0.2s;
-    }
-    .btn:hover {
-      background: #0056b3;
-    }
-    .filter {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 20px;
-      align-items: center;
-    }
-    select, input[type="text"] {
-      padding: 10px;
-      font-size: 14px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-bottom: 40px;
-    }
-    th, td {
-      padding: 12px;
-      border: 1px solid #eee;
-      text-align: left;
-    }
-    th {
-      background-color: #f9f9f9;
-      font-weight: bold;
-      cursor: pointer;
-    }
-    .presence-yes {
-      color: green;
-      font-size: 16px;
-    }
-    .presence-no {
-      color: red;
-      font-size: 16px;
-    }
-    .chart-container {
-      max-width: 300px;
-      margin: 0 auto;
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <h1>Admin - Gestion des invités</h1>
-
-    <div class="actions">
-      <button class="btn" onclick="exportGuests()">📄 Exporter CSV</button>
-      <button class="btn" onclick="loadGuests()">🔄 Recharger les données</button>
-    </div>
-
-    <div class="filter">
-      <select id="tagFilter" onchange="renderGuestTable()">
-        <option value="">Tous les groupes</option>
-        <option value="IT">IT</option>
-        <option value="Marketing">Marketing</option>
-        <option value="VIP">VIP</option>
-        <option value="Staff">Staff</option>
-      </select>
-      <input type="text" id="search" placeholder="Rechercher par nom..." oninput="renderGuestTable()">
-    </div>
-
-    <table id="guestTable">
-      <thead>
-        <tr>
-          <th onclick="sortTable('prenom')">Prénom</th>
-          <th onclick="sortTable('nom')">Nom</th>
-          <th>Email</th>
-          <th>Entreprise</th>
-          <th>Présence</th>
-          <th>Tag</th>
-          <th>Date d’arrivée</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-
-    <div class="chart-container">
-      <canvas id="chart"></canvas>
-    </div>
-  </div>
+<!-- ... HEAD et STYLES inchangés ... -->
 
   <script>
     let guests = [];
@@ -131,20 +6,20 @@
     let sortAsc = true;
 
     function loadGuests() {
-      fetch("https://imo.prod.imagino.com/ucdapi/Mise_a_jour_contact_Present/v120/contactCampagneModerne?limit=10000", {
+      fetch("https://imo.prod.imagino.com/ucdapi/Mise_a_jour_contact_Present/v4/contactCampagneModerne?limit=10000", {
         headers: { "X-API-KEY": "e5072481-ad27-477f-8d35-702887b9ddde" }
       })
-        .then(res => res.json())
-        .then(data => {
-          guests = data.data.map(g => ({
-            ...g,
-            Tag: g.Email?.toLowerCase().includes("imagino") ? "Staff" : "",
-            DateArrivee: g.DateArrivee || '',
-            CheckInTime: g.DateArrivee || ''
-          }));
-          renderGuestTable();
-          renderChart();
-        });
+      .then(res => res.json())
+      .then(data => {
+        guests = data.data.map(g => ({
+          ...g,
+          Tag: g.Email?.toLowerCase().includes("imagino") ? "Staff" : "",
+          DateArrivee: g.Date_Arrivee || '',
+          Entreprise: g.Entreprise || ''
+        }));
+        renderGuestTable();
+        renderChart();
+      });
     }
 
     function renderGuestTable() {
@@ -154,7 +29,7 @@
       const search = document.getElementById("search").value.toLowerCase();
       let filtered = guests.filter(g =>
         (!tag || g.Tag === tag) &&
-        (!search || g.Nom.toLowerCase().includes(search))
+        (!search || g.Nom?.toLowerCase().includes(search))
       );
 
       if (sortKey) {
@@ -168,13 +43,13 @@
       filtered.forEach(g => {
         const tr = document.createElement("tr");
         tr.innerHTML = `
-          <td>${g.Prenom}</td>
-          <td>${g.Nom}</td>
-          <td>${g.Email}</td>
+          <td>${g.Prenom || ''}</td>
+          <td>${g.Nom || ''}</td>
+          <td>${g.Email || ''}</td>
           <td>${g.Entreprise || ''}</td>
           <td class="${g.Present ? 'presence-yes' : 'presence-no'}">${g.Present ? '✔️' : '❌'}</td>
           <td>${g.Tag}</td>
-          <td>${g.DateArrivee || ''}</td>
+          <td>${g.DateArrivee}</td>
         `;
         tbody.appendChild(tr);
       });
@@ -194,7 +69,7 @@
       const rows = guests.map(g => [
         g.Prenom, g.Nom, g.Email, g.Entreprise, g.Present ? 'Présent' : 'Absent', g.Tag, g.DateArrivee
       ]);
-      const csvContent = [headers, ...rows].map(e => e.join(",")).join("\\n");
+      const csvContent = [headers, ...rows].map(e => e.join(",")).join("\n");
       const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
@@ -235,5 +110,3 @@
 
     loadGuests();
   </script>
-</body>
-</html>
