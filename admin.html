@@ -131,20 +131,20 @@
     let sortAsc = true;
 
     function loadGuests() {
-      fetch("https://imo.prod.imagino.com/ucdapi/Mise_a_jour_contact_Present/v120/contactCampagneModerne?limit=10000", {
+      fetch("https://imo.prod.imagino.com/ucdapi/Mise_a_jour_contact_Present/v4/contactCampagneModerne?limit=10000", {
         headers: { "X-API-KEY": "e5072481-ad27-477f-8d35-702887b9ddde" }
       })
-        .then(res => res.json())
-        .then(data => {
-          guests = data.data.map(g => ({
-            ...g,
-            Tag: g.Email?.toLowerCase().includes("imagino") ? "Staff" : "",
-            DateArrivee: g.DateArrivee || '',
-            CheckInTime: g.DateArrivee || ''
-          }));
-          renderGuestTable();
-          renderChart();
-        });
+      .then(res => res.json())
+      .then(data => {
+        guests = data.data.map(g => ({
+          ...g,
+          Tag: g.Email?.toLowerCase().includes("imagino") ? "Staff" : "",
+          DateArrivee: g.Date_Arrivee || '',
+          Entreprise: g.Entreprise || ''
+        }));
+        renderGuestTable();
+        renderChart();
+      });
     }
 
     function renderGuestTable() {
@@ -154,28 +154,28 @@
       const search = document.getElementById("search").value.toLowerCase();
       let filtered = guests.filter(g =>
         (!tag || g.Tag === tag) &&
-        (!search || g.Nom.toLowerCase().includes(search))
+        (!search || (g.Nom && g.Nom.toLowerCase().includes(search)))
       );
 
       if (sortKey) {
         filtered.sort((a, b) => {
-          const valA = a[sortKey]?.toLowerCase?.() || '';
-          const valB = b[sortKey]?.toLowerCase?.() || '';
+          const valA = (a[sortKey] || '').toString().toLowerCase();
+          const valB = (b[sortKey] || '').toString().toLowerCase();
           return sortAsc ? valA.localeCompare(valB) : valB.localeCompare(valA);
         });
       }
 
       filtered.forEach(g => {
         const tr = document.createElement("tr");
-        tr.innerHTML = 
-          <td>${g.Prenom}</td>
-          <td>${g.Nom}</td>
-          <td>${g.Email}</td>
+        tr.innerHTML = `
+          <td>${g.Prenom || ''}</td>
+          <td>${g.Nom || ''}</td>
+          <td>${g.Email || ''}</td>
           <td>${g.Entreprise || ''}</td>
           <td class="${g.Present ? 'presence-yes' : 'presence-no'}">${g.Present ? '✔️' : '❌'}</td>
-          <td>${g.Tag}</td>
+          <td>${g.Tag || ''}</td>
           <td>${g.DateArrivee || ''}</td>
-        ;
+        `;
         tbody.appendChild(tr);
       });
     }
@@ -194,7 +194,7 @@
       const rows = guests.map(g => [
         g.Prenom, g.Nom, g.Email, g.Entreprise, g.Present ? 'Présent' : 'Absent', g.Tag, g.DateArrivee
       ]);
-      const csvContent = [headers, ...rows].map(e => e.join(",")).join("\\n");
+      const csvContent = [headers, ...rows].map(e => e.join(",")).join("\n");
       const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
