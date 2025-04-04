@@ -198,14 +198,16 @@
       updatePresenceCounter();
     }
 
-    function togglePresence(guest) {
-      guest.present = !guest.present;
-      if (guest.present && !guest.dateArrivee) {
-        guest.dateArrivee = new Date().toISOString();
-      }
-      updateGuestRCU(guest);
-      renderGuests();
-    }
+function togglePresence(guest) {
+  guest.present = !guest.present;
+  if (guest.present && !guest.dateArrivee) {
+    const now = new Date();
+    now.setHours(now.getHours() + 2); // Ajout de 2 heures
+    guest.dateArrivee = now.toISOString();
+  }
+  updateGuestRCU(guest);
+  renderGuests();
+}
 
     function updateGuestRCU(guest) {
       fetch("https://imo.prod.imagino.com/ucdapi/Mise_a_jour_contact_Present/v4/contactCampagneModerne", {
