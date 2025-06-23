@@ -73,7 +73,8 @@
       <input type="tel" name="mobile" placeholder="Mobile" />
       <input type="text" name="fonction" placeholder="Fonction" />
       <input type="text" name="entreprise" placeholder="Entreprise" />
-      
+      <input type="text" name="type" placeholder="Type (Client, Partenaire...)" />
+
       <div class="actions">
         <button type="submit">S'enregistrer</button>
         <button type="button" class="secondary-btn" onclick="window.location.href='index.html'">
@@ -97,6 +98,7 @@
       const nom = formData.get("nom").trim();
       const fonction = formData.get("fonction").trim();
       const entreprise = formData.get("entreprise").trim();
+      const type = formData.get("type").trim();
       const now = new Date().toISOString();
 
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -126,6 +128,7 @@
         MOBILE: mobile,
         FONCTION: fonction,
         ENTREPRISE: entreprise,
+        TYPE: type,
         DateArrive: now,
         Matin: false,
         Aprem: false,
