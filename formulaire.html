@@ -85,7 +85,7 @@
 
   <script>
     const apiKey = "e5072481-ad27-477f-8d35-702887b9ddde";
-    const apiBaseUrl = "https://imo.prod.imagino.com/ucdapi/Mise_a_jour_contact_Present/v4";
+    const apiUrl = "https://imo.prod.imagino.com/ucdapi/ImagineDay2025/1/ImagineDay2025";
 
     document.getElementById("manualForm").addEventListener("submit", async function (e) {
       e.preventDefault();
@@ -120,78 +120,37 @@
       }
 
       const contact = {
-        Prenom: prenom,
-        Nom: nom,
-        Email: email,
-        Mobile: mobile,
-        Fonction: fonction,
-        Entreprise: entreprise,
-        Present: true,
-        Date_Arrivee: now
+        EMAIL: email,
+        PRENOM: prenom,
+        NOM: nom,
+        MOBILE: mobile,
+        FONCTION: fonction,
+        ENTREPRISE: entreprise,
+        DateArrive: now,
+        Matin: false,
+        Aprem: false,
+        Lunch: false,
+        Soiree: false
       };
 
       try {
-        const checkRes = await fetch(`${apiBaseUrl}/contactCampagneModerne/${encodeURIComponent(email)}`, {
-          method: "GET",
+        const response = await fetch(apiUrl, {
+          method: "POST",
           headers: {
             accept: "application/json",
+            "Content-Type": "application/json",
             "X-API-KEY": apiKey
-          }
+          },
+          body: JSON.stringify(contact)
         });
 
-        const userExists = checkRes.ok;
+        const result = await response.json();
 
-        if (userExists) {
-          const absentRes = await fetch(`${apiBaseUrl}/contactCampagneModerne`, {
-            method: "POST",
-            headers: {
-              accept: "application/json",
-              "Content-Type": "application/json",
-              "X-API-KEY": apiKey
-            },
-            body: JSON.stringify({ Email: email, Present: false })
-          });
-          if (!absentRes.ok) {
-            alert("Impossible de passer le contact en 'Absent'.");
-            return;
-          }
-
-          const updateRes = await fetch(`${apiBaseUrl}/contactCampagneModerne`, {
-            method: "POST",
-            headers: {
-              accept: "application/json",
-              "Content-Type": "application/json",
-              "X-API-KEY": apiKey
-            },
-            body: JSON.stringify(contact)
-          });
-
-          const updateData = await updateRes.json();
-          if (updateRes.ok && updateData && updateData.Email) {
-            alert("Inscription mise à jour !");
-            window.location.href = "index.html";
-          } else {
-            alert("Erreur lors de la mise à jour.");
-          }
-
+        if (response.ok && result && result.EMAIL) {
+          alert("Inscription enregistrée avec succès !");
+          window.location.href = "index.html";
         } else {
-          const createRes = await fetch(`${apiBaseUrl}/contactCampagneModerne`, {
-            method: "POST",
-            headers: {
-              accept: "application/json",
-              "Content-Type": "application/json",
-              "X-API-KEY": apiKey
-            },
-            body: JSON.stringify(contact)
-          });
-          const createData = await createRes.json();
-
-          if (createRes.ok && createData && createData.Email) {
-            alert("Inscription réussie !");
-            window.location.href = "index.html";
-          } else {
-            alert("Erreur lors de l’inscription. Réessayez.");
-          }
+          alert("Erreur lors de l'enregistrement. Merci de réessayer.");
         }
       } catch (err) {
         console.error("Erreur lors du traitement :", err);
