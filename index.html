@@ -121,13 +121,20 @@
       <button class="btn" onclick="redirectToForm()">Je ne suis pas dans la liste</button>
     </div>
   </div>
+  <div id="detailsModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#00000088; z-index:9999; justify-content:center; align-items:center;">
+  <div style="background:white; padding:20px; border-radius:10px; max-width:500px; width:90%; max-height:80vh; overflow-y:auto;">
+    <h2>Détails de l'invité</h2>
+    <pre id="detailsContent" style="white-space:pre-wrap; word-wrap:break-word;"></pre>
+    <button class="btn" onclick="closeModal()">Fermer</button>
+  </div>
+</div>
 
   <script>
     const apiKey = "e5072481-ad27-477f-8d35-702887b9ddde";
     let guests = [];
 
     function fetchGuests() {
-      fetch("https://imo.prod.imagino.com/ucdapi/Mise_a_jour_contact_Present/v4/contactCampagneModerne?limit=10000", {
+      fetch("https://imo.prod.imagino.com/ucdapi/ImagineDay2025/1/ImagineDay2025?limit=10000", {
         headers: {
           accept: "application/json",
           "X-API-KEY": apiKey
@@ -137,14 +144,14 @@
       .then(data => {
         guests = data.data.map((item, i) => ({
           id: i + 1,
-          nom: item.Nom?.trim() || "",
-          prenom: item.Prenom?.trim() || "",
-          email: item.Email || "",
-          mobile: item.Mobile || "",
-          fonction: item.Fonction || "",
-          entreprise: item.Entreprise || "",
-          present: item.Present === true,
-          dateArrivee: item.Date_Arrivee || ""
+          nom: item.NOM?.trim() || "",
+          prenom: item.PRENOM?.trim() || "",
+          email: item.EMAIL || "",
+          mobile: item.MOBILE || "",
+          fonction: item.FONCTION || "",
+          entreprise: item.ENTREPRISE || "",
+          present: !!item.DateArrive,
+          dateArrivee: item.DateArrive || ""
         }));
         document.getElementById("loader").style.display = "none";
         document.getElementById("guestList").style.display = "block";
@@ -198,19 +205,19 @@
       updatePresenceCounter();
     }
 
-function togglePresence(guest) {
-  guest.present = !guest.present;
-  if (guest.present && !guest.dateArrivee) {
-    const now = new Date();
-    now.setHours(now.getHours() + 2); // Ajout de 2 heures
-    guest.dateArrivee = now.toISOString();
-  }
-  updateGuestRCU(guest);
-  renderGuests();
-}
+    function togglePresence(guest) {
+      guest.present = !guest.present;
+      if (guest.present && !guest.dateArrivee) {
+        const now = new Date();
+        now.setHours(now.getHours() + 2);
+        guest.dateArrivee = now.toISOString();
+      }
+      updateGuestRCU(guest);
+      renderGuests();
+    }
 
     function updateGuestRCU(guest) {
-      fetch("https://imo.prod.imagino.com/ucdapi/Mise_a_jour_contact_Present/v4/contactCampagneModerne", {
+      fetch("https://imo.prod.imagino.com/ucdapi/ImagineDay2025/1/ImagineDay2025", {
         method: "POST",
         headers: {
           accept: "application/json",
@@ -218,24 +225,48 @@ function togglePresence(guest) {
           "X-API-KEY": apiKey
         },
         body: JSON.stringify({
-          Email: guest.email,
-          Nom: guest.nom,
-          Prenom: guest.prenom,
-          Mobile: guest.mobile,
-          Fonction: guest.fonction,
-          Entreprise: guest.entreprise,
-          Present: guest.present,
-          Date_Arrivee: guest.present ? guest.dateArrivee : null
+          EMAIL: guest.email,
+          NOM: guest.nom,
+          PRENOM: guest.prenom,
+          MOBILE: guest.mobile,
+          FONCTION: guest.fonction,
+          ENTREPRISE: guest.entreprise,
+          DateArrive: guest.present ? guest.dateArrivee : null,
+          Matin: true,
+          Lunch: true,
+          Soiree: false
         })
       })
       .then(res => res.json())
       .then(data => console.log("✅ RCU mis à jour :", data))
       .catch(err => console.error("❌ Erreur RCU :", err));
     }
-
-    function showDetails(guest) {
-      alert(`Nom : ${guest.nom}\nPrénom : ${guest.prenom}\nEmail : ${guest.email}\nMobile : ${guest.mobile}\nFonction : ${guest.fonction}\nEntreprise : ${guest.entreprise}\nPrésent : ${guest.present ? "Oui" : "Non"}\nDate d'arrivée : ${guest.dateArrivee || "–"}`);
-    }
+function showDetails(guest) {
+  const content = `
+Prénom : ${guest.prenom || "–"}
+Nom : ${guest.nom || "–"}
+Email : ${guest.email || "–"}
+Mobile : ${guest.mobile || "–"}
+Fonction : ${guest.fonction || "–"}
+Entreprise : ${guest.entreprise || "–"}
+Date d'arrivée : ${guest.dateArrivee || "–"}
+Matin : ${guest.Matin ? "Oui" : "Non"}
+Après-midi : ${guest.Aprem ? "Oui" : "Non"}
+Aprem uniquement : ${guest.ApremOnly ? "Oui" : "Non"}
+Déjeuner : ${guest.Lunch ? "Oui" : "Non"}
+Déjeuner assis : ${guest.LunchAssis ? "Oui" : "Non"}
+Déjeuner debout : ${guest.LunchDebout ? "Oui" : "Non"}
+Déjeuner staff : ${guest.LunchStaff ? "Oui" : "Non"}
+Soirée : ${guest.Soiree ? "Oui" : "Non"}
+Groupe Atelier : ${guest.GROUPEATELIER || "–"}
+Type : ${guest.TYPE || "–"}
+Account Executive : ${guest.AccountExecutive || "–"}
+  `;
+  document.getElementById("detailsContent").textContent = content.trim();
+  document.getElementById("detailsModal").style.display = "flex";
+}function closeModal() {
+  document.getElementById("detailsModal").style.display = "none";
+}
 
     function updatePresenceCounter() {
       const total = guests.length;
