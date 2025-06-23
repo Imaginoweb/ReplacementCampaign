@@ -157,6 +157,7 @@
           if (email.toLowerCase().includes("imagino")) tag = "imagino";
           else if ((item.TYPE || '').toLowerCase() === "partenaire") tag = "partenaire";
           else if ((item.TYPE || '').toLowerCase() === "prospect") tag = "prospect";
+
           return {
             id: i + 1,
             nom: item.NOM?.trim() || "",
@@ -165,10 +166,11 @@
             mobile: item.MOBILE || "",
             fonction: item.FONCTION || "",
             entreprise: item.ENTREPRISE || "",
-            present: !!item.DateArrive,
-            dateArrivee: item.DateArrive || "",
             type: item.TYPE || "",
-            tag
+            dateArrivee: item.DateArrive || "",
+            present: !!item.DateArrive,
+            tag,
+            ...item
           };
         });
         document.getElementById("loader").style.display = "none";
@@ -289,7 +291,9 @@
     }
 
     function showDetails(guest) {
-      alert(JSON.stringify(guest, null, 2));
+      const cloned = { ...guest };
+      delete cloned.present;  // car redondant avec DateArrive
+      alert(JSON.stringify(cloned, null, 2));
     }
 
     fetchGuests();
