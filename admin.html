@@ -92,17 +92,16 @@
     <div class="actions">
       <button class="btn" onclick="exportGuests()">📄 Exporter CSV</button>
       <button class="btn" onclick="loadGuests()">🔄 Recharger les données</button>
-      
-  <button class="btn" onclick="window.location.href='index.html'">🏠 Retour à l’accueil</button>
+      <button class="btn" onclick="window.location.href='index.html'">🏠 Retour à l’accueil</button>
     </div>
 
     <div class="filter">
       <select id="tagFilter" onchange="renderGuestTable()">
         <option value="">Tous les groupes</option>
-        <option value="IT">IT</option>
-        <option value="Marketing">Marketing</option>
-        <option value="VIP">VIP</option>
-        <option value="Staff">Staff</option>
+        <option value="Client">Client</option>
+        <option value="Partenaire">Partenaire</option>
+        <option value="Prospect">Prospect</option>
+        <option value="Imagino">Imagino</option>
       </select>
       <input type="text" id="search" placeholder="Rechercher par nom..." oninput="renderGuestTable()">
     </div>
@@ -110,8 +109,8 @@
     <table id="guestTable">
       <thead>
         <tr>
-          <th onclick="sortTable('prenom')">Prénom</th>
-          <th onclick="sortTable('nom')">Nom</th>
+          <th onclick="sortTable('PRENOM')">Prénom</th>
+          <th onclick="sortTable('NOM')">Nom</th>
           <th>Email</th>
           <th>Entreprise</th>
           <th>Présence</th>
@@ -133,17 +132,27 @@
     let sortAsc = true;
 
     function loadGuests() {
-      fetch("https://imo.prod.imagino.com/ucdapi/Mise_a_jour_contact_Present/v4/contactCampagneModerne?limit=10000", {
+      fetch("https://imo.prod.imagino.com/ucdapi/ImagineDay2025/1/ImagineDay2025?limit=10000", {
         headers: { "X-API-KEY": "e5072481-ad27-477f-8d35-702887b9ddde" }
       })
       .then(res => res.json())
       .then(data => {
-        guests = data.data.map(g => ({
-          ...g,
-          Tag: g.Email?.toLowerCase().includes("imagino") ? "Staff" : "",
-          DateArrivee: g.Date_Arrivee || '',
-          Entreprise: g.Entreprise || ''
-        }));
+        guests = data.data.map(g => {
+          const email = g.EMAIL || '';
+          const type = (g.TYPE || '').toLowerCase();
+          let tag = '';
+          if (email.includes("@imagino")) tag = "Imagino";
+          else if (type === "partenaire") tag = "Partenaire";
+          else if (type === "client") tag = "Client";
+          else if (type === "prospect") tag = "Prospect";
+          return {
+            ...g,
+            Tag: tag,
+            Present: !!g.DateArrive,
+            DateArrive: g.DateArrive || '',
+            ENTREPRISE: g.ENTREPRISE || ''
+          };
+        });
         renderGuestTable();
         renderChart();
       });
@@ -156,7 +165,7 @@
       const search = document.getElementById("search").value.toLowerCase();
       let filtered = guests.filter(g =>
         (!tag || g.Tag === tag) &&
-        (!search || (g.Nom && g.Nom.toLowerCase().includes(search)))
+        (!search || (g.NOM && g.NOM.toLowerCase().includes(search)))
       );
 
       if (sortKey) {
@@ -170,13 +179,13 @@
       filtered.forEach(g => {
         const tr = document.createElement("tr");
         tr.innerHTML = `
-          <td>${g.Prenom || ''}</td>
-          <td>${g.Nom || ''}</td>
-          <td>${g.Email || ''}</td>
-          <td>${g.Entreprise || ''}</td>
-          <td class="${g.Present ? 'presence-yes' : 'presence-no'}">${g.Present ? '✔️' : '❌'}</td>
+          <td>${g.PRENOM || ''}</td>
+          <td>${g.NOM || ''}</td>
+          <td>${g.EMAIL || ''}</td>
+          <td>${g.ENTREPRISE || ''}</td>
+          <td class="${g.Present ? 'presence-yes' : 'presence-no'}">${g.Present ? '✔️ Oui' : '❌ Non'}</td>
           <td>${g.Tag || ''}</td>
-          <td>${g.DateArrivee || ''}</td>
+          <td>${g.DateArrive || ''}</td>
         `;
         tbody.appendChild(tr);
       });
@@ -194,7 +203,7 @@
     function exportGuests() {
       const headers = ["Prénom", "Nom", "Email", "Entreprise", "Présence", "Tag", "Date d’arrivée"];
       const rows = guests.map(g => [
-        g.Prenom, g.Nom, g.Email, g.Entreprise, g.Present ? 'Présent' : 'Absent', g.Tag, g.DateArrivee
+        g.PRENOM, g.NOM, g.EMAIL, g.ENTREPRISE, g.Present ? 'Présent' : 'Absent', g.Tag, g.DateArrive
       ]);
       const csvContent = [headers, ...rows].map(e => e.join(",")).join("\n");
       const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
