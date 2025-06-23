@@ -36,12 +36,6 @@
       justify-content: space-between;
       margin-bottom: 30px;
     }
-.btn.client {
-  background: #007bff; /* bleu pour les clients */
-}
-.btn.partenaire {
-  background: #28a745; /* vert pour les partenaires */
-}
     .logo-title {
       display: flex;
       align-items: center;
@@ -99,6 +93,27 @@
       font-size: 16px;
       padding: 20px;
     }
+    .tag {
+      font-size: 12px;
+      font-weight: bold;
+      padding: 5px 10px;
+      border-radius: 999px;
+      color: white;
+      margin-right: 10px;
+      white-space: nowrap;
+    }
+    .tag.client {
+      background-color: #007bff;
+    }
+    .tag.partenaire {
+      background-color: #28a745;
+    }
+    .tag.imagino {
+      background-color: #f0ad4e;
+    }
+    .tag.prospect {
+      background-color: #6f42c1;
+    }
   </style>
 </head>
 <body>
@@ -106,35 +121,23 @@
     <div class="admin-access">
       <button class="btn" onclick="accessAdmin()">Accès Admin</button>
     </div>
-
     <div class="header">
       <div class="logo-title">
         <img src="logo.png" alt="Logo Imagino" />
         <h1>Check-in des invités</h1>
       </div>
     </div>
-
     <div class="search-bar">
       <input type="text" id="searchInput" placeholder="Rechercher un invité..." oninput="renderGuests()">
     </div>
-
     <div class="counter" id="presenceCounter"></div>
     <div id="loader" class="loader">Chargement des invités...</div>
     <div id="guestList" style="display:none;"></div>
-
     <div class="actions">
       <button class="btn" onclick="showInfos()">Infos</button>
       <button class="btn" onclick="redirectToForm()">Je ne suis pas dans la liste</button>
     </div>
   </div>
-  <div id="detailsModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#00000088; z-index:9999; justify-content:center; align-items:center;">
-  <div style="background:white; padding:20px; border-radius:10px; max-width:500px; width:90%; max-height:80vh; overflow-y:auto;">
-    <h2>Détails de l'invité</h2>
-    <pre id="detailsContent" style="white-space:pre-wrap; word-wrap:break-word;"></pre>
-    <button class="btn" onclick="closeModal()">Fermer</button>
-  </div>
-</div>
-
   <script>
     const apiKey = "e5072481-ad27-477f-8d35-702887b9ddde";
     let guests = [];
@@ -148,17 +151,26 @@
       })
       .then(res => res.json())
       .then(data => {
-        guests = data.data.map((item, i) => ({
-          id: i + 1,
-          nom: item.NOM?.trim() || "",
-          prenom: item.PRENOM?.trim() || "",
-          email: item.EMAIL || "",
-          mobile: item.MOBILE || "",
-          fonction: item.FONCTION || "",
-          entreprise: item.ENTREPRISE || "",
-          present: !!item.DateArrive,
-          dateArrivee: item.DateArrive || "",type: item.TYPE || "",
-        }));
+        guests = data.data.map((item, i) => {
+          const email = item.EMAIL || "";
+          let tag = "client";
+          if (email.toLowerCase().includes("imagino")) tag = "imagino";
+          else if ((item.TYPE || '').toLowerCase() === "partenaire") tag = "partenaire";
+          else if ((item.TYPE || '').toLowerCase() === "prospect") tag = "prospect";
+          return {
+            id: i + 1,
+            nom: item.NOM?.trim() || "",
+            prenom: item.PRENOM?.trim() || "",
+            email,
+            mobile: item.MOBILE || "",
+            fonction: item.FONCTION || "",
+            entreprise: item.ENTREPRISE || "",
+            present: !!item.DateArrive,
+            dateArrivee: item.DateArrive || "",
+            type: item.TYPE || "",
+            tag
+          };
+        });
         document.getElementById("loader").style.display = "none";
         document.getElementById("guestList").style.display = "block";
         renderGuests();
@@ -188,7 +200,9 @@
           <small>${guest.fonction} – ${guest.entreprise}</small>
         `;
 
-        const btnGroup = document.createElement("div");
+        const tagLabel = document.createElement("span");
+        tagLabel.className = `tag ${guest.tag}`;
+        tagLabel.textContent = guest.tag.charAt(0).toUpperCase() + guest.tag.slice(1);
 
         const btnCheck = document.createElement("button");
         btnCheck.className = guest.present ? "btn arrived" : "btn";
@@ -199,12 +213,11 @@
         btnDetails.className = "btn";
         btnDetails.textContent = "Détails";
         btnDetails.onclick = () => showDetails(guest);
-btnCheck.className = guest.present
-  ? "btn arrived"
-  : `btn ${guest.type.toLowerCase() === 'partenaire' ? 'partenaire' : 'client'}`;
 
-btnDetails.className = `btn ${guest.type.toLowerCase() === 'partenaire' ? 'partenaire' : 'client'}`;
-
+        const btnGroup = document.createElement("div");
+        btnGroup.style.display = "flex";
+        btnGroup.style.alignItems = "center";
+        btnGroup.appendChild(tagLabel);
         btnGroup.appendChild(btnCheck);
         btnGroup.appendChild(btnDetails);
 
@@ -243,41 +256,13 @@ btnDetails.className = `btn ${guest.type.toLowerCase() === 'partenaire' ? 'parte
           FONCTION: guest.fonction,
           ENTREPRISE: guest.entreprise,
           DateArrive: guest.present ? guest.dateArrivee : null,
-          Matin: true,
-          Lunch: true,
-          Soiree: false,TYPE: guest.type
+          TYPE: guest.type
         })
       })
       .then(res => res.json())
-      .then(data => console.log("✅ RCU mis à jour :", data))
-      .catch(err => console.error("❌ Erreur RCU :", err));
+      .then(data => console.log("RCU mis à jour", data))
+      .catch(err => console.error("Erreur RCU", err));
     }
-function showDetails(guest) {
-  const content = `
-Prénom : ${guest.prenom || "–"}
-Nom : ${guest.nom || "–"}
-Email : ${guest.email || "–"}
-Mobile : ${guest.mobile || "–"}
-Fonction : ${guest.fonction || "–"}
-Entreprise : ${guest.entreprise || "–"}
-Date d'arrivée : ${guest.dateArrivee || "–"}
-Matin : ${guest.Matin ? "Oui" : "Non"}
-Après-midi : ${guest.Aprem ? "Oui" : "Non"}
-Aprem uniquement : ${guest.ApremOnly ? "Oui" : "Non"}
-Déjeuner : ${guest.Lunch ? "Oui" : "Non"}
-Déjeuner assis : ${guest.LunchAssis ? "Oui" : "Non"}
-Déjeuner debout : ${guest.LunchDebout ? "Oui" : "Non"}
-Déjeuner staff : ${guest.LunchStaff ? "Oui" : "Non"}
-Soirée : ${guest.Soiree ? "Oui" : "Non"}
-Groupe Atelier : ${guest.GROUPEATELIER || "–"}
-Type : ${guest.TYPE || "–"}
-Account Executive : ${guest.AccountExecutive || "–"}
-  `;
-  document.getElementById("detailsContent").textContent = content.trim();
-  document.getElementById("detailsModal").style.display = "flex";
-}function closeModal() {
-  document.getElementById("detailsModal").style.display = "none";
-}
 
     function updatePresenceCounter() {
       const total = guests.length;
@@ -301,6 +286,10 @@ Account Executive : ${guest.AccountExecutive || "–"}
 
     function showInfos() {
       alert("Recherchez votre nom pour valider votre présence. Si vous ne figurez pas dans la liste, cliquez sur le bouton prévu.");
+    }
+
+    function showDetails(guest) {
+      alert(JSON.stringify(guest, null, 2));
     }
 
     fetchGuests();
