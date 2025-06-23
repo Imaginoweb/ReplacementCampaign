@@ -36,6 +36,12 @@
       justify-content: space-between;
       margin-bottom: 30px;
     }
+.btn.client {
+  background: #007bff; /* bleu pour les clients */
+}
+.btn.partenaire {
+  background: #28a745; /* vert pour les partenaires */
+}
     .logo-title {
       display: flex;
       align-items: center;
@@ -151,7 +157,7 @@
           fonction: item.FONCTION || "",
           entreprise: item.ENTREPRISE || "",
           present: !!item.DateArrive,
-          dateArrivee: item.DateArrive || ""
+          dateArrivee: item.DateArrive || "",type: item.TYPE || "",
         }));
         document.getElementById("loader").style.display = "none";
         document.getElementById("guestList").style.display = "block";
@@ -193,6 +199,11 @@
         btnDetails.className = "btn";
         btnDetails.textContent = "Détails";
         btnDetails.onclick = () => showDetails(guest);
+btnCheck.className = guest.present
+  ? "btn arrived"
+  : `btn ${guest.type.toLowerCase() === 'partenaire' ? 'partenaire' : 'client'}`;
+
+btnDetails.className = `btn ${guest.type.toLowerCase() === 'partenaire' ? 'partenaire' : 'client'}`;
 
         btnGroup.appendChild(btnCheck);
         btnGroup.appendChild(btnDetails);
@@ -234,7 +245,7 @@
           DateArrive: guest.present ? guest.dateArrivee : null,
           Matin: true,
           Lunch: true,
-          Soiree: false
+          Soiree: false,TYPE: guest.type
         })
       })
       .then(res => res.json())
