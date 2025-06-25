@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin - Imagino</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #f4f4f4;
+      padding: 40px;
+      display: flex;
+      justify-content: center;
+    }
+    .container {
+      width: 100%;
+      max-width: 1200px;
+      background: white;
+      padding: 40px;
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+    }
+    h1 {
+      font-size: 28px;
+      margin-bottom: 30px;
+      font-weight: 600;
+    }
+    .actions {
+      margin-bottom: 20px;
+      display: flex;
+      gap: 10px;
+    }
+    .btn {
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 16px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background 0.2s;
+    }
+    .btn:hover {
+      background: #0056b3;
+    }
+    .filter {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      align-items: center;
+    }
+    select, input[type="text"] {
+      padding: 10px;
+      font-size: 14px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 40px;
+    }
+    th, td {
+      padding: 12px;
+      border: 1px solid #eee;
+      text-align: left;
+    }
+    th {
+      background-color: #f9f9f9;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .presence-yes {
+      color: green;
+      font-size: 16px;
+    }
+    .presence-no {
+      color: red;
+      font-size: 16px;
+    }
+    .chart-container {
+      max-width: 300px;
+      margin: 0 auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Admin - Gestion des invités</h1>
+
+    <div class="actions">
+      <button class="btn" onclick="loadGuests()">🔄 Recharger les données</button>
+    </div>
+
+    <div class="filter">
+      <select id="tagFilter" onchange="renderGuestTable()">
+        <option value="">Tous les groupes</option>
+        <option value="Client">Client</option>
+        <option value="Partenaire">Partenaire</option>
+        <option value="Prospect">Prospect</option>
+        <option value="Imagino">Imagino</option>
+      </select>
+      <input type="text" id="search" placeholder="Rechercher par nom..." oninput="renderGuestTable()">
+    </div>
+
+    <table id="guestTable">
+      <thead>
+        <tr>
+          <th onclick="sortTable('PRENOM')">Prénom</th>
+          <th onclick="sortTable('NOM')">Nom</th>
+          <th>Email</th>
+          <th>Entreprise</th>
+          <th>Présence</th>
+          <th>Tag</th>
+          <th>Date d’arrivée</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <div class="chart-container">
+      <canvas id="chart"></canvas>
+    </div>
+  </div>
+
+  <script>
+    let guests = [];
+    let sortKey = '';
+    let sortAsc = true;
+
+    function loadGuests() {
+      fetch("https://imo.prod.imagino.com/ucdapi/ImagineDay2025/1/ImagineDay2025?limit=10000", {
+        headers: { "X-API-KEY": "e5072481-ad27-477f-8d35-702887b9ddde" }
+      })
+      .then(res => res.json())
+      .then(data => {
+        guests = data.data.map(g => {
+          const email = g.EMAIL || '';
+          const type = (g.TYPE || '').toLowerCase();
+          let tag = '';
+          if (email.includes("@imagino")) tag = "Imagino";
+          else if (type === "partenaire") tag = "Partenaire";
+          else if (type === "client") tag = "Client";
+          else if (type === "prospect") tag = "Prospect";
+          return {
+            ...g,
+            Tag: tag,
+            Present: !!g.DateArrive,
+            DateArrive: g.DateArrive || '',
+            ENTREPRISE: g.ENTREPRISE || ''
+          };
+        });
+        renderGuestTable();
+        renderChart();
+      });
+    }
+
+    function renderGuestTable() {
+      const tbody = document.querySelector("#guestTable tbody");
+      tbody.innerHTML = "";
+      const tag = document.getElementById("tagFilter").value;
+      const search = document.getElementById("search").value.toLowerCase();
+      let filtered = guests.filter(g =>
+        (!tag || g.Tag === tag) &&
+        (!search || (g.NOM && g.NOM.toLowerCase().includes(search)))
+      );
+
+      if (sortKey) {
+        filtered.sort((a, b) => {
+          const valA = (a[sortKey] || '').toString().toLowerCase();
+          const valB = (b[sortKey] || '').toString().toLowerCase();
+          return sortAsc ? valA.localeCompare(valB) : valB.localeCompare(valA);
+        });
+      }
+
+      filtered.forEach(g => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${g.PRENOM || ''}</td>
+          <td>${g.NOM || ''}</td>
+          <td>${g.EMAIL || ''}</td>
+          <td>${g.ENTREPRISE || ''}</td>
+          <td class="${g.Present ? 'presence-yes' : 'presence-no'}">${g.Present ? '✔️ Oui' : '❌ Non'}</td>
+          <td>${g.Tag || ''}</td>
+          <td>${g.DateArrive || ''}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function sortTable(key) {
+      if (sortKey === key) sortAsc = !sortAsc;
+      else {
+        sortKey = key;
+        sortAsc = true;
+      }
+      renderGuestTable();
+    }
+
+    function exportGuests() {
+      const headers = ["Prénom", "Nom", "Email", "Entreprise", "Présence", "Tag", "Date d’arrivée"];
+      const rows = guests.map(g => [
+        g.PRENOM, g.NOM, g.EMAIL, g.ENTREPRISE, g.Present ? 'Présent' : 'Absent', g.Tag, g.DateArrive
+      ]);
+      const csvContent = [headers, ...rows].map(e => e.join(",")).join("\n");
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", "invites.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    function renderChart() {
+      const ctx = document.getElementById("chart").getContext("2d");
+      const presentCount = guests.filter(g => g.Present).length;
+      const absentCount = guests.length - presentCount;
+      new Chart(ctx, {
+        type: 'pie',
+        data: {
+          labels: ['Présents', 'Absents'],
+          datasets: [{
+            data: [presentCount, absentCount],
+            backgroundColor: ['#28a745', '#dc3545']
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: {
+                font: { size: 14 },
+                color: '#444'
+              }
+            }
+          }
+        }
+      });
+    }
+
+    loadGuests();
+  </script>
+</body>
+</html>
