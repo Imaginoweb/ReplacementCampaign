@@ -130,9 +130,9 @@
     let sortAsc = true;
 
     function loadGuests() {
-      fetch("https://imo.prod.imagino.com/ucdapi/ImagineDay2025/1/ImagineDay2025?limit=10000", {
-        headers: { "X-API-KEY": "e5072481-ad27-477f-8d35-702887b9ddde" }
-      })
+     fetch("https://summer-tree-89a6.francois-imagino.workers.dev/ucdapi/ImagineDay2025/1/ImagineDay2025?limit=10000", {
+  headers: { accept: "application/json" }
+})
       .then(res => res.json())
       .then(data => {
         guests = data.data.map(g => {
