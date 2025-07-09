@@ -85,8 +85,7 @@
   </div>
 
   <script>
-    const apiKey = "e5072481-ad27-477f-8d35-702887b9ddde";
-    const apiUrl = "https://imo.prod.imagino.com/ucdapi/ImagineDay2025/1/ImagineDay2025";
+   const apiUrl = "https://summer-tree-89a6.francois-imagino.workers.dev/ucdapi/ImagineDay2025/1/ImagineDay2025";
 
     document.getElementById("manualForm").addEventListener("submit", async function (e) {
       e.preventDefault();
@@ -138,14 +137,13 @@
 
       try {
         const response = await fetch(apiUrl, {
-          method: "POST",
-          headers: {
-            accept: "application/json",
-            "Content-Type": "application/json",
-            "X-API-KEY": apiKey
-          },
-          body: JSON.stringify(contact)
-        });
+  method: "POST",
+  headers: {
+    accept: "application/json",
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify(contact)
+});
 
         const result = await response.json();
 
