@@ -139,14 +139,12 @@
     </div>
   </div>
   <script>
-    const apiKey = "e5072481-ad27-477f-8d35-702887b9ddde";
     let guests = [];
 
     function fetchGuests() {
-      fetch("https://imo.prod.imagino.com/ucdapi/ImagineDay2025/1/ImagineDay2025?limit=10000", {
+      fetch("https://summer-tree-89a6.francois-imagino.workers.dev/ucdapi/ImagineDay2025/1/ImagineDay2025?limit=10000", {
         headers: {
-          accept: "application/json",
-          "X-API-KEY": apiKey
+          accept: "application/json"
         }
       })
       .then(res => res.json())
@@ -243,12 +241,11 @@
     }
 
     function updateGuestRCU(guest) {
-      fetch("https://imo.prod.imagino.com/ucdapi/ImagineDay2025/1/ImagineDay2025", {
+      fetch("https://summer-tree-89a6.francois-imagino.workers.dev/ucdapi/ImagineDay2025/1/ImagineDay2025", {
         method: "POST",
         headers: {
           accept: "application/json",
-          "Content-Type": "application/json",
-          "X-API-KEY": apiKey
+          "Content-Type": "application/json"
         },
         body: JSON.stringify({
           EMAIL: guest.email,
@@ -292,7 +289,7 @@
 
     function showDetails(guest) {
       const cloned = { ...guest };
-      delete cloned.present;  // car redondant avec DateArrive
+      delete cloned.present;
       alert(JSON.stringify(cloned, null, 2));
     }
 
